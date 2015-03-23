@@ -1,0 +1,8 @@
+exclude folder ssa_upstream/libibumad/
+exclude folder ssa_upstream/opensm/
+exclude source ssa_upstream/ibssa2/acm/conftest.c
+exclude source ssa_upstream/ibssa2/distrib/conftest.c
+exclude source ssa_upstream/ibssa2/plugin/conftest.c
+exclude folder ssa_upstream/ibssa2/acm/include/
+exclude folder ssa_upstream/ibssa2/distrib/include/
+exclude folder ssa_upstream/ibssa2/plugin/include/

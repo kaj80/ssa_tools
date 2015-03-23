@@ -1,0 +1,9 @@
+*.pyo
+*.pyc
+*.egg
+.project
+.pydevproject
+persistent
+sources/
+usr/
+

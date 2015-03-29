@@ -124,14 +124,14 @@ function lib_download {
 
 function lib_install {
 	if [ -z $OPTS ]; then
-	    OPTS=""
+	    OPTS="--prefix=/usr"
 	fi
-	
-        for lib in libibverbs libmlx4 librdmacm libibumad
+
+        for lib in libibverbs libmlx4 librdmacm libibumad opensm
         do
             pushd $lib
 	    grep -rl 'AC_PREREQ(\[2.67\]' . | xargs sed -i 's/AC_PREREQ(\[2.67\]/AC_PREREQ([2.63]/g'
-	    ./autogen.sh && ./configure $OPTS && make all -j && make all install
+	    ./autogen.sh && ./configure $OPTS && make all -j && sudo make all install
             if [ $? -ne 0 ];then
 		echo "Failed to $cmd of $lib"
 		popd
@@ -139,9 +139,7 @@ function lib_install {
             fi
             popd
         done
-    }
-
-
+}
 
 RGV0=$0
 ARGC=$#

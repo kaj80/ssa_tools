@@ -110,13 +110,16 @@ function load_modules {
 
 function lib_download {
      if [[ -z "$SSA_LIBS_REPO" ]]; then
-	SSA_LIBS_REPO="git://git.kernel.org/pub/scm/libs/infiniband/libibverbs.git git://git.kernel.org/pub/scm/libs/infiniband/libmlx4.git git://git.openfabrics.org/~shefty/librdmacm.git git://openfabrics.org/~halr/libibumad.git"
+	SSA_LIBS_REPO="git://flatbed.openfabrics.org/~halr/opensm.git \
+		       git://git.kernel.org/pub/scm/libs/infiniband/libibverbs.git \
+		       git://git.kernel.org/pub/scm/libs/infiniband/libmlx4.git \
+		       git://git.openfabrics.org/~shefty/librdmacm.git \
+		       git://openfabrics.org/~halr/libibumad.git"
     fi
-    pushd $SSA_DEST 
+    pushd $SSA_DEST
     for git in $SSA_LIBS_REPO; do
         git clone $git
     done
-    
 }
 
 function lib_install {

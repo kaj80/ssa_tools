@@ -160,10 +160,10 @@ def save_dict (dict, file):
 
 	f = open(file, 'w')
 	for type in type_list :
-		f.write(label_dict[type] + ' ' + fabric_ini_dict[type] + '\n')
+		line_str = label_dict[type] + ' ' + fabric_ini_dict[type] + '\n'
+		f.write(line_str)
+		print line_str,
 	f.close()
-
-	print file
 
 
 def get_random_dict(node_by_type_dict, node_list, num_dict) :

@@ -31,46 +31,24 @@ distrib_num	= 1
 access_num	= 1
 acm_num		= 0
 
-core_label	= 'core_nodes'
-distrib_label	= 'distrib_nodes'
-access_label	= 'access_nodes'
-acm_label	= 'acm_nodes'
+type_list	= [ 'CORE', 'DISTRIB', 'ACCESS', 'ACM' ]
 
-def save_dict (dict, file):
+label_dict	= {
+		    'CORE' : 'core_nodes',
+		    'DISTRIB' : 'distrib_nodes',
+		    'ACCESS' : 'access_nodes',
+		    'ACM' : 'acm_nodes'
+		  }
 
-	f = open(file, 'w')
-	f.write(core_label	+ ' ' + dict[core_label] + '\n')
-	f.write(distrib_label	+ ' ' + dict[distrib_label] + '\n')
-	f.write(access_label	+ ' ' + dict[access_label] + '\n')
-	f.write(acm_label	+ ' ' + dict[acm_label] + '\n')
-	f.close()
-
-def generate_ini_line (dict, label, node_list):
-	line_str = ''
-
-	for elem in node_list[:-1]:
-		line_str = line_str + elem + ','
-	line_str = line_str + node_list[-1]
-
-	dict[label] = line_str
-
-
-def generate_fabric_dict (core_list, distrib_list, access_list, acm_list):
-	ssa_fabric_dict = {}
-
-	generate_ini_line(ssa_fabric_dict, core_label,	core_list)
-	generate_ini_line(ssa_fabric_dict, distrib_label, distrib_list)
-	generate_ini_line(ssa_fabric_dict, access_label, access_list)
-	generate_ini_line(ssa_fabric_dict, acm_label, acm_list)
-
-	return ssa_fabric_dict
-
+label_list	= [ 'SSA', 'UPSTR', 'MOFED' ]
+label		= 'SSA'
 
 def print_options():
 
 	print '------------- SSA FABRIC GENERATOR OPTIONS ------------------'
 	print '%-30s %s' % ('| Input file: ', input_file)
 	print '%-30s %s' % ('| Output file: ', output_dir + output_file)
+	print '%-30s %s' % ('| Nodes label: ', label)
 	print '%-30s %s' % ('| Core nodes: ', str(core_num))
 	print '%-30s %s' % ('| Distribution nodes: ', str(distrib_num))
 	print '%-30s %s' % ('| Access nodes: ', str(access_num))
@@ -97,12 +75,19 @@ def validate_options(opts, args):
 			print '-E- Output directory specified doesn\'t exist.',
 			return 1
 
+	if (opts.label) :
+		if not opts.label in label_list :
+			print '-E- Wrong node label specified.'
+			print '-E- It should be one of the following: ' + str(label_list) + '\n'
+			return 1
+
 	return 0
 
 def handle_options(parser):
 
 	global input_file
 	global output_dir
+	global label
 	global core_num
 	global distrib_num
 	global access_num
@@ -125,6 +110,9 @@ def handle_options(parser):
 	if (opts.output_dir) :
 		output_dir = opts.output_dir + '/'
 
+	if (opts.label) :
+		label = opts.label
+
 	input_file = args[0]
 
 
@@ -135,6 +123,10 @@ def set_options():
 	parser.add_option('-o', '--output-dir',
 		dest = 'output_dir', metavar = 'output directory', action = 'store',
 		help = 'directory for output ini file in the following format: ssa_fabric_xxCR_xxDL_xxAL_xxACM.ini')
+
+	parser.add_option('-l', '--label',
+		dest = 'label', metavar = 'nodes label', action = 'store',
+		help = 'label of the nodes that should be used (SSA [default] / UPSTR / MOFED)')
 
 	parser.add_option('-c', '--core-num',
 		dest = 'core_num', metavar = 'cores', action = 'store',
@@ -151,15 +143,66 @@ def set_options():
 	handle_options(parser)
 
 
-def get_random_nodes(node_list, node_num) :
-	rand_list = []
+def generate_ini_line (dict, type, label, node_list):
+	line_str = ''
 
-	for i in range(0, node_num) :
-		elem = random.choice(node_list)
-		rand_list.append(elem[:-1]) # remove EOL character
-		node_list.remove(elem)
+	for elem in node_list[:-1]:
+		line_str = line_str + elem + ','
+	line_str = line_str + node_list[-1]
 
-	return rand_list
+	dict[type] = line_str
+
+
+def fabric_to_ini (fabric_dict):
+	fabric_ini = {}
+
+	for type in type_list :
+		generate_ini_line(fabric_ini, type, label_dict[type], fabric_dict[type])
+
+	return fabric_ini
+
+
+def save_dict (dict, file):
+	fabric_ini_dict = fabric_to_ini(dict)
+
+	f = open(file, 'w')
+	for type in type_list :
+		f.write(label_dict[type] + ' ' + fabric_ini_dict[type] + '\n')
+	f.close()
+
+
+def get_random_dict(node_by_type_dict, node_list, num_dict) :
+	fabric_dict	= {}
+
+	for type in type_list :
+		fabric_dict[type] = []
+
+		for i in range(0, num_dict[type]) :
+
+			if node_by_type_dict[type] :
+				elem = random.choice(node_by_type_dict[type])
+			else :
+				node_specific_type_set = set()
+				for type_tmp in type_list :
+					node_specific_type_set.update(node_by_type_dict[type_tmp])
+
+				opt_nodes_list = list(node_specific_type_set ^ set(node_list))
+				if opt_nodes_list :
+					elem = random.choice(opt_nodes_list)
+				else :
+					elem = random.choice(list(node_specific_type_set))
+
+			fabric_dict[type].append(elem)
+
+			# remove element from global nodes list
+			node_list.remove(elem)
+
+			# remove element from all type specific lists
+			for type_tmp in type_list :
+				if elem in node_by_type_dict[type_tmp] :
+					node_by_type_dict[type_tmp].remove(elem)
+
+	return fabric_dict
 
 
 def main(args):
@@ -168,10 +211,15 @@ def main(args):
 	global nodes
 	global acm_num
 
-	node_list	= []
-	core_list	= []
-	distrib_list	= []
-	access_list	= []
+	node_by_type_dict	= {}
+	num_dict		= {}
+	fabric_dict		= {}
+	node_list		= []
+
+	for type in type_list :
+		node_by_type_dict[type]		= []
+		fabric_dict[type]		= []
+		num_dict[type]			= 0
 
 	set_options()
 	fin = open(input_file, 'rU')
@@ -179,7 +227,29 @@ def main(args):
 	fin.close()
 
 	for line in lines:
-		node_list.append(line)
+		node_name	= ''
+		llist		= []
+		tlist		= []
+
+		str_list	= line.split()
+		node_name	= str_list[0]
+
+		for str_tmp in str_list[1:] :
+			if str_tmp in label_list :
+				llist.append(str_tmp)
+
+		for str_tmp in str_list[1:] :
+			if str_tmp in type_list :
+				tlist.append(str_tmp)
+
+		if llist and not label in llist :
+			continue
+
+		node_name = str_list[0]
+
+		node_list.append(node_name)
+		for type in tlist :
+			node_by_type_dict[type].append(node_name)
 
 	nodes = int(len(node_list))
 
@@ -201,14 +271,15 @@ def main(args):
 
 	print_options()
 
-	node_list_copy	= list(node_list)
+	node_list_copy		= list(node_list)
 
-	core_list	= get_random_nodes(node_list_copy, core_num)
-	distrib_list	= get_random_nodes(node_list_copy, distrib_num)
-	access_list	= get_random_nodes(node_list_copy, access_num)
-	acm_list	= get_random_nodes(node_list_copy, acm_num)
+	num_dict['CORE']	= core_num
+	num_dict['DISTRIB']	= distrib_num
+	num_dict['ACCESS']	= access_num
+	num_dict['ACM']		= acm_num
 
-	fabric_dict = generate_fabric_dict(core_list, distrib_list, access_list, acm_list)
+	fabric_dict	= get_random_dict(node_by_type_dict, node_list_copy, num_dict)
+
 	save_dict(fabric_dict, output_dir + output_file)
 
 

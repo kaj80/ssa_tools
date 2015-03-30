@@ -23,7 +23,6 @@ import optparse
 
 input_file	= ''
 output_file	= ''
-output_dir	= './'
 
 nodes		= 0
 core_num	= 1
@@ -46,7 +45,7 @@ def print_options():
 
 	print '------------- SSA FABRIC GENERATOR OPTIONS ------------------'
 	print '%-30s %s' % ('| Input file: ', input_file)
-	print '%-30s %s' % ('| Output file: ', output_dir + output_file)
+	print '%-30s %s' % ('| Output file: ', output_file)
 	print '%-30s %s' % ('| Nodes label: ', label)
 	print '%-30s %s' % ('| Core nodes: ', str(core_num))
 	print '%-30s %s' % ('| Distribution nodes: ', str(distrib_num))
@@ -69,9 +68,9 @@ def validate_options(opts, args):
 			print '-E- Input file specified doesn\'t exist.',
 			return 1
 
-	if (opts.output_dir) :
-		if not os.path.isdir(opts.output_dir) :
-			print '-E- Output directory specified doesn\'t exist.',
+	if (opts.output_file) :
+		if not os.path.isdir(os.path.dirname(os.path.realpath(opts.output_file))) :
+			print '-E- Output file specified directory doesn\'t exist.',
 			return 1
 
 	return 0
@@ -79,7 +78,7 @@ def validate_options(opts, args):
 def handle_options(parser):
 
 	global input_file
-	global output_dir
+	global output_file
 	global label
 	global core_num
 	global distrib_num
@@ -100,8 +99,8 @@ def handle_options(parser):
 	if (opts.access_num) :
 		access_num = int(opts.access_num)
 
-	if (opts.output_dir) :
-		output_dir = opts.output_dir + '/'
+	if (opts.output_file) :
+		output_file = opts.output_file
 
 	if (opts.label) :
 		label = opts.label
@@ -113,9 +112,9 @@ def set_options():
 
 	parser = optparse.OptionParser(usage = 'Usage: ./gen_fabric.py [options] input_nodes_file')
 
-	parser.add_option('-o', '--output-dir',
-		dest = 'output_dir', metavar = 'output directory', action = 'store',
-		help = 'directory for output ini file in the following format: ssa_fabric_xxCR_xxDL_xxAL_xxACM.ini')
+	parser.add_option('-o', '--output-file',
+		dest = 'output_file', metavar = 'output file', action = 'store',
+		help = 'output file')
 
 	parser.add_option('-l', '--label',
 		dest = 'label', metavar = 'nodes label', action = 'store',
@@ -158,12 +157,16 @@ def fabric_to_ini (fabric_dict):
 def save_dict (dict, file):
 	fabric_ini_dict = fabric_to_ini(dict)
 
-	f = open(file, 'w')
-	for type in type_list :
-		line_str = label_dict[type] + ' ' + fabric_ini_dict[type] + '\n'
-		f.write(line_str)
-		print line_str,
-	f.close()
+	if file :
+		f = open(file, 'w')
+		for type in type_list :
+			line_str = label_dict[type] + ' ' + fabric_ini_dict[type] + '\n'
+			f.write(line_str)
+		f.close()
+	else :
+		for type in type_list :
+			line_str = label_dict[type] + ' ' + fabric_ini_dict[type] + '\n'
+			print line_str,
 
 
 def get_random_dict(node_by_type_dict, node_list, num_dict) :
@@ -217,6 +220,7 @@ def main(args):
 		num_dict[type]			= 0
 
 	set_options()
+
 	fin = open(input_file, 'rU')
 	lines = fin.readlines()
 	fin.close()
@@ -258,13 +262,13 @@ def main(args):
 
 	acm_num = nodes - (core_num + distrib_num + access_num)
 
-	output_file = 'ssa_fabric_' + \
-		       str(core_num) + 'CR_' + \
-		       str(distrib_num) + 'DL_' + \
-		       str(access_num) + 'AL_' + \
-		       str(acm_num) + 'ACM.ini'
+#	output_file = 'ssa_fabric_' + \
+#		       str(core_num) + 'CR_' + \
+#		       str(distrib_num) + 'DL_' + \
+#		       str(access_num) + 'AL_' + \
+#		       str(acm_num) + 'ACM.ini'
 
-	#print_options()
+#	print_options()
 
 	node_list_copy		= list(node_list)
 
@@ -275,7 +279,7 @@ def main(args):
 
 	fabric_dict	= get_random_dict(node_by_type_dict, node_list_copy, num_dict)
 
-	save_dict(fabric_dict, output_dir + output_file)
+	save_dict(fabric_dict, output_file)
 
 
 # This is the standard boilerplate that calls the main() function

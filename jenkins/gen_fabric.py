@@ -40,7 +40,6 @@ label_dict	= {
 		    'ACM' : 'acm_nodes'
 		  }
 
-label_list	= [ 'SSA', 'UPSTR', 'MOFED' ]
 label		= 'SSA'
 
 def print_options():
@@ -73,12 +72,6 @@ def validate_options(opts, args):
 	if (opts.output_dir) :
 		if not os.path.isdir(opts.output_dir) :
 			print '-E- Output directory specified doesn\'t exist.',
-			return 1
-
-	if (opts.label) :
-		if not opts.label in label_list :
-			print '-E- Wrong node label specified.'
-			print '-E- It should be one of the following: ' + str(label_list) + '\n'
 			return 1
 
 	return 0
@@ -237,7 +230,7 @@ def main(args):
 		node_name	= str_list[0]
 
 		for str_tmp in str_list[1:] :
-			if str_tmp in label_list :
+			if not str_tmp in type_list :
 				llist.append(str_tmp)
 
 		for str_tmp in str_list[1:] :

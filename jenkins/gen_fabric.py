@@ -170,6 +170,8 @@ def save_dict (dict, file):
 		f.write(label_dict[type] + ' ' + fabric_ini_dict[type] + '\n')
 	f.close()
 
+	print file
+
 
 def get_random_dict(node_by_type_dict, node_list, num_dict) :
 	fabric_dict	= {}
@@ -269,7 +271,7 @@ def main(args):
 		       str(access_num) + 'AL_' + \
 		       str(acm_num) + 'ACM.ini'
 
-	print_options()
+	#print_options()
 
 	node_list_copy		= list(node_list)
 

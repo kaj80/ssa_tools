@@ -56,7 +56,8 @@ rc=$?
 if [[ $rc -eq 0 ]]; then
 	echo "ERROR: Server is running after test. $TEST_CMD"
        	exit 1
-	kill -9 $SERVER_PID
 fi
+
+pkill -9 $TEST
 
 exit 0

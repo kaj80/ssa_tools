@@ -25,48 +25,49 @@ GID=`ibaddr | awk '{print $2}'`
 echo "Server GID: $GID"
 
 for tool in rstream riostream; do
-	TEST_CMD="$tool -f gid"
+	for blocking in b n; do
+		TEST_CMD="$tool -f gid"
+		TEST_CMD+=" -T $blocking"
 
-	if [ $tool = "rstream"]; then
-		TEST_CMD+=" -k 30 "
-	fi
+		if [ $tool == "rstream" ]; then
+			TEST_CMD+=" -k 30 "
+		fi
 
-	echo "Test: $TEST_CMD"
+		echo "Test: $TEST_CMD"
 
 
-	pkill -9 $tool
+		pkill -9 $tool
 
-	$TEST_CMD -b "$GID" > log.txt &
-	SERVER_PID=$!
-	kill -0 $SERVER_PID 2>/dev/null
-	rc=$?
-	if [[ $rc != 0 ]]; then
-		echo "ERROR: Server is not running. $TEST_CMD"
-		exit $rc
-	fi
+		$TEST_CMD -b "$GID" > log.txt &
+		SERVER_PID=$!
+		kill -0 $SERVER_PID 2>/dev/null
+		rc=$?
+		if [[ $rc != 0 ]]; then
+			echo "ERROR: Server is not running. $TEST_CMD"
+			exit $rc
+		fi
 
-	echo "Server pid: $SERVER_PID"
+		echo "Server pid: $SERVER_PID"
 
-	REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
-	REMOTE_COMMAND+=" $TEST_CMD -s $GID" 
-	echo $REMOTE_COMMAND
-	pdsh -w $REMOTE "'pkill -9 $tool' > /dev/null 2>&1"
-	pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
-	rc=$?
-	if [[ $rc != 0 ]]; then
-		echo "ERROR: Test failed. $TEST_CMD";
-	fi
+		REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
+		REMOTE_COMMAND+=" $TEST_CMD -s $GID"
+		echo $REMOTE_COMMAND
+		pdsh -w $REMOTE "'pkill -9 $tool' > /dev/null 2>&1"
+		pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
+		rc=$?
+		if [[ $rc != 0 ]]; then
+			echo "ERROR: Test failed. $TEST_CMD";
+		fi
 
-	kill -0 $SERVER_PID 2>/dev/null
-	rc=$?
-	if [[ $rc -eq 0 ]]; then
-		echo "ERROR: Server is running after test. $TEST_CMD"
-		exit 1
-	fi
+		kill -0 $SERVER_PID 2>/dev/null
+		rc=$?
+		if [[ $rc -eq 0 ]]; then
+			echo "ERROR: Server is running after test. $TEST_CMD"
+			exit 1
+		fi
 
-	pkill -9 $tool
+		pkill -9 $tool
 
 	done
-
-
+done
 exit 0

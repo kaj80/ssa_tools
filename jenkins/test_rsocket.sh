@@ -30,7 +30,7 @@ echo "Server GID: $GID"
 
 pkill -9 $TEST
 
-eval $TEST_CMD -b "$GID" &
+$TEST_CMD -b "$GID" > log.txt &
 SERVER_PID=$!
 kill -0 $SERVER_PID 2>/dev/null
 rc=$?
@@ -41,15 +41,11 @@ fi
 
 echo "Server pid: $SERVER_PID"
 
-REMOTE_COMMAND="'sudo $TEST_CMD -s $GID'"
-echo "Client command: $REMOTE_COMMAND"
-echo "TTT"
-sudo pdsh -N -w `echo $REMOTE` 'sudo which rstream'
-echo "TTT"
-sudo pdsh -N -w $REMOTE "'sudo pkill -9 $TEST'"
-echo "TTT"
-sudo pdsh -u 10 -N -w $REMOTE $REMOTE_COMMAND
-echo "TTT"
+REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
+REMOTE_COMMAND+=" $TEST_CMD -s $GID" 
+echo $REMOTE_COMMAND
+pdsh -w $REMOTE "'pkill -9 $TEST' > /dev/null 2>&1"
+pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
 rc=$?
 if [[ $rc != 0 ]]; then
        	echo "ERROR: Test failed. $TEST_CMD";

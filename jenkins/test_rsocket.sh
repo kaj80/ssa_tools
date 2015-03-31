@@ -1,5 +1,5 @@
 #!/bin/bash
-export LD_LIBRARY_PATH=:/usr/local/lib/:/usr/local/lib/:/usr/local/lib/:/usr/local/lib/:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 TEST_CMD="rstream -f gid "
 TEST=`echo $TEST_CMD | awk '{print $1}'`
 

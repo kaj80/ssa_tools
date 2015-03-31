@@ -14,6 +14,16 @@ if [[ -z $REMOTE ]]; then
 	exit 1;
 fi
 
+ibaddr > /dev/null
+rc=$?
+if [[ $rc != 0 ]]; then
+	echo "ERROR: ibaddr failed"
+	exit $rc
+fi
+
+GID=`ibaddr | awk '{print $2}'`
+echo "Server GID: $GID"
+
 for tool in rstream riostream; do
 	TEST_CMD="$tool -f gid"
 
@@ -23,15 +33,6 @@ for tool in rstream riostream; do
 
 	echo "Test: $TEST_CMD"
 
-	ibaddr > /dev/null
-	rc=$?
-	if [[ $rc != 0 ]]; then
-		echo "ERROR: ibaddr failed"
-		exit $rc
-	fi 
-
-	GID=`ibaddr | awk '{print $2}'`
-	echo "Server GID: $GID"
 
 	pkill -9 $tool
 

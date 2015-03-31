@@ -1,20 +1,24 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 
+if [[ $# > 0 ]];then
+	REMOTE=$1;
+	echo "Remote server: $REMOTE"
+else
+	echo "ERROR: There is no remote server name"
+	echo "Usage: test_rsocket <remote server name>"
+	exit 1
+fi
+
+if [[ -z $REMOTE ]]; then
+	exit 1;
+fi
+
 for tool in rstream riostream; do
-	TEST_CMD="$tool -f gid "
+	TEST_CMD="$tool -f gid"
 
-	if [[ $# > 0 ]];then
-		REMOTE=$1;
-		echo "Remote server: $REMOTE"
-	else
-		echo "ERROR: There is no remote server name"
-		echo "Usage: test_rsocket <remote server name>"
-		exit 1
-	fi
-
-	if [[ -z $REMOTE ]]; then
-		exit 1;
+	if [ $tool = "rstream"]; then
+		TEST_CMD+=" -k 30 "
 	fi
 
 	echo "Test: $TEST_CMD"

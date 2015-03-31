@@ -1,63 +1,67 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
-TEST_CMD="rstream -f gid "
-TEST=`echo $TEST_CMD | awk '{print $1}'`
 
-if [[ $# > 0 ]];then
-       	REMOTE=$1;
-	echo "Remote server: $REMOTE"
-else
-	echo "ERROR: There is no remote server name"
-	echo "Usage: test_rsocket <remote server name>"
-	exit 1
-fi
+for tool in rstream riostream; do
+	TEST_CMD="$tool -f gid "
 
-if [[ -z $REMOTE ]]; then
-       	exit 1;
-fi
+	if [[ $# > 0 ]];then
+		REMOTE=$1;
+		echo "Remote server: $REMOTE"
+	else
+		echo "ERROR: There is no remote server name"
+		echo "Usage: test_rsocket <remote server name>"
+		exit 1
+	fi
 
-echo "Test: $TEST_CMD"
+	if [[ -z $REMOTE ]]; then
+		exit 1;
+	fi
 
-ibaddr > /dev/null
-rc=$?
-if [[ $rc != 0 ]]; then
-	echo "ERROR: ibaddr failed"
-       	exit $rc
-fi 
+	echo "Test: $TEST_CMD"
 
-GID=`ibaddr | awk '{print $2}'`
-echo "Server GID: $GID"
+	ibaddr > /dev/null
+	rc=$?
+	if [[ $rc != 0 ]]; then
+		echo "ERROR: ibaddr failed"
+		exit $rc
+	fi 
 
-pkill -9 $TEST
+	GID=`ibaddr | awk '{print $2}'`
+	echo "Server GID: $GID"
 
-$TEST_CMD -b "$GID" > log.txt &
-SERVER_PID=$!
-kill -0 $SERVER_PID 2>/dev/null
-rc=$?
-if [[ $rc != 0 ]]; then
-	echo "ERROR: Server is not running. $TEST_CMD"
-       	exit $rc
-fi
+	pkill -9 $tool
 
-echo "Server pid: $SERVER_PID"
+	$TEST_CMD -b "$GID" > log.txt &
+	SERVER_PID=$!
+	kill -0 $SERVER_PID 2>/dev/null
+	rc=$?
+	if [[ $rc != 0 ]]; then
+		echo "ERROR: Server is not running. $TEST_CMD"
+		exit $rc
+	fi
 
-REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
-REMOTE_COMMAND+=" $TEST_CMD -s $GID" 
-echo $REMOTE_COMMAND
-pdsh -w $REMOTE "'pkill -9 $TEST' > /dev/null 2>&1"
-pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
-rc=$?
-if [[ $rc != 0 ]]; then
-       	echo "ERROR: Test failed. $TEST_CMD";
-fi
+	echo "Server pid: $SERVER_PID"
 
-kill -0 $SERVER_PID 2>/dev/null
-rc=$?
-if [[ $rc -eq 0 ]]; then
-	echo "ERROR: Server is running after test. $TEST_CMD"
-       	exit 1
-fi
+	REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
+	REMOTE_COMMAND+=" $TEST_CMD -s $GID" 
+	echo $REMOTE_COMMAND
+	pdsh -w $REMOTE "'pkill -9 $tool' > /dev/null 2>&1"
+	pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
+	rc=$?
+	if [[ $rc != 0 ]]; then
+		echo "ERROR: Test failed. $TEST_CMD";
+	fi
 
-pkill -9 $TEST
+	kill -0 $SERVER_PID 2>/dev/null
+	rc=$?
+	if [[ $rc -eq 0 ]]; then
+		echo "ERROR: Server is running after test. $TEST_CMD"
+		exit 1
+	fi
+
+	pkill -9 $tool
+
+	done
+
 
 exit 0

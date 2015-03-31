@@ -1,5 +1,4 @@
 /usr/include/infiniband/acm.h
-/usr/include/infiniband
 /usr/include/infiniband/arch.h
 /usr/include/infiniband/driver.h
 /usr/include/infiniband/driver_exp.h
@@ -129,9 +128,7 @@
 /opt/mellanox/ssa/share/man/man1/ib_acme.1
 /opt/mellanox/ssa/share/man/man1/ibacm.1
 /opt/mellanox/ssa/share/man/man7/ibacm.7
-/usr/include/infiniband
 /usr/include/infiniband/ib.h
-/usr/include/rdma
 /usr/include/rdma/rdma_cma.h
 /usr/include/rdma/rdma_cma_abi.h
 /usr/include/rdma/rdma_verbs.h

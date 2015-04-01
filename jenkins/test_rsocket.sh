@@ -45,6 +45,8 @@ for tool in rstream riostream; do
 			TEST_CMD="$tool -f gid"
 			TEST_CMD+=" -T $blocking"
 
+			pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
+
 			if [ $tool == "rstream" ]; then
 				TEST_CMD+=" -k 30 "
 			fi

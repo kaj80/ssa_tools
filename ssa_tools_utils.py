@@ -292,19 +292,25 @@ class prdb():
 
 
 class run_on_remote():
+
     def __init__(self, host = 'localhost', root = True):
+
         print 'Connecting to %s' % (host)
-        self.client = paramiko.SSHClient()
+
+        self.client	= paramiko.SSHClient()
+        self.output	= ""
+        self.host	= host
+        self.pid	= None
+        self.root	= root
+
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.output = ""
-        self.host = host
-        self.pid = None
-        self.root = root
+
         try:
             self.client.connect(host, timeout = 9999)
             #please set user/password.
             #self.client.connect(host, username = 'lennyb', password = '******', timeout = 9999)
             print 'Established remote connection with %s ' % (host)
+
         except:
             print 'Failed to established remote connection with %s' % host
             return None
@@ -312,26 +318,30 @@ class run_on_remote():
 
     def run(self, cmd):
         ex_time = time.strftime("%b %d %H:%M:%S")
+
         if self.root:
             cmd = cmd
             #cmd = 'sudo -E %s' % cmd
         try:
-            _, stdout, _ = self.client.exec_command(cmd)
-            self.status = stdout.channel.recv_exit_status()
-            self.output = stdout.channel.recv(4096).decode('ascii')
+            _, stdout, _	= self.client.exec_command(cmd)
+            self.status		= stdout.channel.recv_exit_status()
+            self.output		= stdout.channel.recv(4096).decode('ascii')
+
             print '%s [%s]# %s\n%s' % (ex_time, self.host, cmd, self.output)
             return self.status
+
         except:
             self.status = 1
             self.output = ''
+
             print 'failed to execute %s [%s]# %s' % (ex_time, self.host, cmd)
             return self.status
 
 
     def run_in_background(self, cmd):
-        channel = self.client.get_transport().open_session()
-        pty = channel.get_pty()
-        shell = self.client.invoke_shell()
+        channel	= self.client.get_transport().open_session()
+        pty	= channel.get_pty()
+        shell	= self.client.invoke_shell()
         print " ****************nohup %s 2>&1 &\n" % cmd
         shell.send("nohup %s 2>&1 &\n" % cmd)
         print ' ********************************'

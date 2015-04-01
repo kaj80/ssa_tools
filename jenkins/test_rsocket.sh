@@ -1,5 +1,6 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
+export PATH=/usr/local/bin/:/usr/local/sbin/:/usr/sbin/:/usr/bin/:$PATH
 
 if [[ $# > 0 ]];then
 	REMOTE=$1;

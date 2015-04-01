@@ -2,6 +2,8 @@
 export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH
 export PATH=/usr/local/bin/:/usr/local/sbin/:/usr/sbin/:/usr/bin/:$PATH
 
+STATUS_FILE=rsocket.test.status
+
 if [[ $# > 0 ]];then
 	REMOTE=$1;
 	pdsh -w $REMOTE 'uname -mrs'
@@ -39,6 +41,8 @@ fi
 GID=`ibaddr | awk '{print $2}'`
 echo "Server GID: $GID"
 
+status=0
+
 for tool in rstream riostream; do
 	for blocking in b n; do
 		for async in a none; do
@@ -57,13 +61,17 @@ for tool in rstream riostream; do
 
 			echo "Test: $TEST_CMD"
 
-			$TEST_CMD -b "$GID" > log.txt &
+			rm -f "$STATUS_FILE"
+
+			($TEST_CMD -b "$GID" > /dev/null; echo "result: $?" >  $STATUS_FILE)&
 			SERVER_PID=$!
+			echo "pid: $SERVER_PID" > $STATUS_FILE 
 			kill -0 $SERVER_PID 2>/dev/null
 			rc=$?
 			if [[ $rc != 0 ]]; then
 				echo "ERROR: Server is not running. $TEST_CMD"
-				exit $rc
+				let status=status+rc
+				break
 			fi
 
 			echo "Server pid: $SERVER_PID"
@@ -71,23 +79,41 @@ for tool in rstream riostream; do
 			REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
 			REMOTE_COMMAND+=" $TEST_CMD -s $GID"
 			echo $REMOTE_COMMAND
-			pdsh -w $REMOTE "'pkill -9 $tool' > /dev/null 2>&1"
 			pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
 			rc=$?
 			if [[ $rc != 0 ]]; then
 				echo "ERROR: Test failed. $TEST_CMD";
+				let status=status+rc
+				pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
+				rm -f $STATUS_FILE > /dev/null 2>&1
+				break
 			fi
 
 			kill -0 $SERVER_PID 2>/dev/null
 			rc=$?
 			if [[ $rc -eq 0 ]]; then
 				echo "ERROR: Server is running after test. $TEST_CMD"
-				exit 1
+				let status=status+rc
+				pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
+				rm -f $STATUS_FILE > /dev/null 2>&1
+				break
 			fi
 
-			pkill -9 $tool
+			server_ret_val="$(grep "result" $STATUS_FILE | awk '{print $2}')"
+			if [[ $server_ret_val != "0" ]]; then
+				echo "ERROR: Server error: $server_ret_val . $TEST_CMD"
+				let status=status+1
+				pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
+				rm -f $STATUS_FILE > /dev/null 2>&1
+				break
+
+			fi
+
+			rm -f $STATUS_FILE > /dev/null 2>&1
 
 		done
 	done
 done
-exit 0
+
+rm -f $STATUS_FILE > /dev/null 2>&1
+exit $status

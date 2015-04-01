@@ -1,4 +1,4 @@
-mport hudson.model.*
+import hudson.model.*
 
 String labelIWantServersOf = "SSA"; 
 String serverList = '';

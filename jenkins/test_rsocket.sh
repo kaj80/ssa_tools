@@ -57,9 +57,6 @@ for tool in rstream riostream; do
 
 			echo "Test: $TEST_CMD"
 
-
-			pkill -9 $tool
-
 			$TEST_CMD -b "$GID" > log.txt &
 			SERVER_PID=$!
 			kill -0 $SERVER_PID 2>/dev/null

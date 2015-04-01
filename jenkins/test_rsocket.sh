@@ -49,8 +49,6 @@ for tool in rstream riostream; do
 			TEST_CMD="$tool -f gid"
 			TEST_CMD+=" -T $blocking"
 
-			pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
-
 			if [ $tool == "rstream" ]; then
 				TEST_CMD+=" -k 30 "
 			fi
@@ -60,6 +58,7 @@ for tool in rstream riostream; do
 			fi
 
 			echo "Test: $TEST_CMD"
+			pkill -9 -f "$GID" > /dev/null 2>&1
 
 			rm -f "$STATUS_FILE"
 
@@ -79,12 +78,14 @@ for tool in rstream riostream; do
 			REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
 			REMOTE_COMMAND+=" $TEST_CMD -s $GID"
 			echo $REMOTE_COMMAND
+			pdsh -w $REMOTE pkill -9 -f $GID
 			pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
 			rc=$?
+			pdsh -w $REMOTE pkill -9 -f $GID
 			if [[ $rc != 0 ]]; then
 				echo "ERROR: Test failed. $TEST_CMD";
 				let status=status+rc
-				pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
+				pkill -9 -f "$GID" > /dev/null 2>&1
 				rm -f $STATUS_FILE > /dev/null 2>&1
 				break
 			fi
@@ -94,7 +95,7 @@ for tool in rstream riostream; do
 			if [[ $rc -eq 0 ]]; then
 				echo "ERROR: Server is running after test. $TEST_CMD"
 				let status=status+rc
-				pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
+				pkill -9 -f "$GID" > /dev/null 2>&1
 				rm -f $STATUS_FILE > /dev/null 2>&1
 				break
 			fi
@@ -103,7 +104,7 @@ for tool in rstream riostream; do
 			if [[ $server_ret_val != "0" ]]; then
 				echo "ERROR: Server error: $server_ret_val . $TEST_CMD"
 				let status=status+1
-				pkill -9 -f "$TEST_CMD" > /dev/null 2>&1
+				pkill -9 -f "$GID" > /dev/null 2>&1
 				rm -f $STATUS_FILE > /dev/null 2>&1
 				break
 

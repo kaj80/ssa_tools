@@ -94,7 +94,7 @@ for tool in rstream riostream; do
 			rc=$?
 			if [[ $rc -eq 0 ]]; then
 				echo "ERROR: Server is running after test. $TEST_CMD"
-				let status=status+rc
+				let status=status+1
 				pkill -9 -f "$GID" > /dev/null 2>&1
 				rm -f $STATUS_FILE > /dev/null 2>&1
 				break

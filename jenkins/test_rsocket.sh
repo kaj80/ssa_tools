@@ -22,6 +22,12 @@ if [[ $rc != 0 ]]; then
 	exit $rc
 fi
 
+sminfo > /dev/null 2>&1
+rc=$?
+if [[ $rc != 0 ]]; then
+	opensm -B
+fi
+
 GID=`ibaddr | awk '{print $2}'`
 echo "Server GID: $GID"
 

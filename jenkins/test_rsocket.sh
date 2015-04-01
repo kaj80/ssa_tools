@@ -78,10 +78,10 @@ for tool in rstream riostream; do
 			REMOTE_COMMAND='export LD_LIBRARY_PATH=/usr/local/lib/:$LD_LIBRARY_PATH; export PATH=/usr/local/bin:$PATH;'
 			REMOTE_COMMAND+=" $TEST_CMD -s $GID"
 			echo $REMOTE_COMMAND
-			pdsh -w $REMOTE pkill -9 -f $GID
-			pdsh -u 10 -w $REMOTE $REMOTE_COMMAND
+			pdsh -t 20 -w $REMOTE pkill -9 -f $GID
+			pdsh -t 20 -u 30 -w $REMOTE $REMOTE_COMMAND
 			rc=$?
-			pdsh -w $REMOTE pkill -9 -f $GID
+			pdsh -t 20 -w $REMOTE pkill -9 -f $GID
 			if [[ $rc != 0 ]]; then
 				echo "ERROR: Test failed. $TEST_CMD";
 				let status=status+rc

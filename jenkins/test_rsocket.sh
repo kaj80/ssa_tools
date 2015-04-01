@@ -4,7 +4,8 @@ export PATH=/usr/local/bin/:/usr/local/sbin/:/usr/sbin/:/usr/bin/:$PATH
 
 if [[ $# > 0 ]];then
 	REMOTE=$1;
-	echo "Remote server: $REMOTE"
+	pdsh -w $REMOTE 'uname -mrs'
+	pdsh -w $REMOTE 'cat /etc/*release | head -n1'
 else
 	echo "ERROR: There is no remote server name"
 	echo "Usage: test_rsocket <remote server name>"

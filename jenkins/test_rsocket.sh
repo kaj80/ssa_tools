@@ -16,6 +16,13 @@ if [[ -z $REMOTE ]]; then
 	exit 1;
 fi
 
+which pdsh > /dev/null 2>&1
+rc=$?
+if [[ $rc != 0 ]]; then
+	echo "ERROR: pdsh not found"
+	exit $rc
+fi
+
 ibaddr > /dev/null
 rc=$?
 if [[ $rc != 0 ]]; then

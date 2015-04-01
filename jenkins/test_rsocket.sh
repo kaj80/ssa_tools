@@ -79,7 +79,7 @@ for tool in rstream riostream; do
 			REMOTE_COMMAND+=" $TEST_CMD -s $GID"
 			echo $REMOTE_COMMAND
 			pdsh -t 20 -w $REMOTE pkill -9 -f $GID
-			pdsh -t 20 -u 30 -w $REMOTE $REMOTE_COMMAND
+			pdsh -t 20 -u 60 -w $REMOTE $REMOTE_COMMAND
 			rc=$?
 			pdsh -t 20 -w $REMOTE pkill -9 -f $GID
 			if [[ $rc != 0 ]]; then

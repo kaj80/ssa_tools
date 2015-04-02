@@ -29,6 +29,7 @@ if [[ $rc != 0 ]]; then
 	exit $rc
 fi
 
+echo "Remote server: $REMOTE"
 pdsh -w $REMOTE 'uname -mrs'
 pdsh -w $REMOTE 'cat /etc/*release | head -n1'
 
@@ -46,7 +47,7 @@ if [[ $rc != 0 ]]; then
 fi
 
 GID=`ibaddr | awk '{print $2}'`
-echo "Server GID: $GID"
+echo "Local GID: $GID"
 
 let status=0
 ERRORS=""

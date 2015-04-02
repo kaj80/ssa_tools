@@ -8,7 +8,7 @@ println(labelIWantServersOf);
 for (aSlave in hudson.model.Hudson.instance.slaves) {          
   out.println('Evaluating Server(' + aSlave.name + ') with label = ' + aSlave.getLabelString());  
 
-  if (aSlave.getLabelString().indexOf(labelIWantServersOf ) > -1) {
+  if (!aSlave.getComputer().isOffline() && aSlave.getLabelString().indexOf(labelIWantServersOf ) > -1) {
     serverList += aSlave.name + ' '+ aSlave.getLabelString() + '\n';        
     out.println('Valid server found: ' + aSlave.name);                  
   }    

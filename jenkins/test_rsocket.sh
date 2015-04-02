@@ -30,7 +30,13 @@ if [[ $rc != 0 ]]; then
 fi
 
 echo "Remote server: $REMOTE"
+
 pdsh -w $REMOTE 'uname -mrs'
+rc=$?
+if [[ $rc != 0 ]]; then
+	echo "ERROR: pdsh to $REMOTE failed"
+	exit $rc
+fi
 pdsh -w $REMOTE 'cat /etc/*release | head -n1'
 
 ibaddr > /dev/null

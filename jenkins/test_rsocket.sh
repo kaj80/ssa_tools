@@ -6,8 +6,6 @@ STATUS_FILE=rsocket.test.status
 
 if [[ $# > 0 ]];then
 	REMOTE=$1;
-	pdsh -w $REMOTE 'uname -mrs'
-	pdsh -w $REMOTE 'cat /etc/*release | head -n1'
 else
 	echo "ERROR: There is no remote server name"
 	echo "Usage: test_rsocket <remote server name>"
@@ -15,7 +13,13 @@ else
 fi
 
 if [[ -z $REMOTE ]]; then
-	exit 1;
+	exit 1
+fi
+
+ping -c 1 -q $REMOTE >/dev/null 2>&1;rc=$?
+if [[ $rc != 0 ]]; then
+	echo "ERROR: ping to $REMOTE failed"
+	exit $rc
 fi
 
 which pdsh > /dev/null 2>&1
@@ -24,6 +28,9 @@ if [[ $rc != 0 ]]; then
 	echo "ERROR: pdsh not found"
 	exit $rc
 fi
+
+pdsh -w $REMOTE 'uname -mrs'
+pdsh -w $REMOTE 'cat /etc/*release | head -n1'
 
 ibaddr > /dev/null
 rc=$?
@@ -41,7 +48,8 @@ fi
 GID=`ibaddr | awk '{print $2}'`
 echo "Server GID: $GID"
 
-status=0
+let status=0
+ERRORS=""
 
 for tool in rstream riostream; do
 	for blocking in b n; do
@@ -70,6 +78,9 @@ for tool in rstream riostream; do
 			if [[ $rc != 0 ]]; then
 				echo "ERROR: Server is not running. $TEST_CMD"
 				let status=status+rc
+				ERRORS+="$REMOTE($TEST_CMD) "
+				pkill -9 -f "$GID" > /dev/null 2>&1
+				rm -f $STATUS_FILE > /dev/null 2>&1
 				break
 			fi
 
@@ -85,6 +96,7 @@ for tool in rstream riostream; do
 			if [[ $rc != 0 ]]; then
 				echo "ERROR: Test failed. $TEST_CMD";
 				let status=status+rc
+				ERRORS+="$REMOTE($TEST_CMD) "
 				pkill -9 -f "$GID" > /dev/null 2>&1
 				rm -f $STATUS_FILE > /dev/null 2>&1
 				break
@@ -95,6 +107,7 @@ for tool in rstream riostream; do
 			if [[ $rc -eq 0 ]]; then
 				echo "ERROR: Server is running after test. $TEST_CMD"
 				let status=status+1
+				ERRORS+="$REMOTE($TEST_CMD) "
 				pkill -9 -f "$GID" > /dev/null 2>&1
 				rm -f $STATUS_FILE > /dev/null 2>&1
 				break
@@ -104,6 +117,7 @@ for tool in rstream riostream; do
 			if [[ $server_ret_val != "0" ]]; then
 				echo "ERROR: Server error: $server_ret_val . $TEST_CMD"
 				let status=status+1
+				ERRORS+="$REMOTE($TEST_CMD) "
 				pkill -9 -f "$GID" > /dev/null 2>&1
 				rm -f $STATUS_FILE > /dev/null 2>&1
 				break
@@ -117,4 +131,8 @@ for tool in rstream riostream; do
 done
 
 rm -f $STATUS_FILE > /dev/null 2>&1
+
+if [[ $status != 0 ]]; then
+	echo "ERROR: Tests failed : $ERRORS"
+fi
 exit $status

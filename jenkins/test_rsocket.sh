@@ -39,6 +39,15 @@ if [[ $rc != 0 ]]; then
 fi
 pdsh -w $REMOTE 'cat /etc/*release | head -n1'
 
+for module in rdma_cm ib_addr rdma_ucm ib_uverbs ib_umad mlx[4,5]_core mlx[4,5]_ib; do
+	lsmod | grep -q $module;rc=$?
+	if [[ $rc != 0 ]]; then
+		echo "ERROR: $module is not loaded"
+		exit $rc
+	fi
+done
+
+
 ibaddr > /dev/null
 rc=$?
 if [[ $rc != 0 ]]; then

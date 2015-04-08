@@ -1,8 +1,17 @@
 #!/usr/bin/python
 
+#
+# This test should be run when the following SSA fabric is configured:
+#
+# CORES     : 2
+# DISTRIB   : >= 1
+# ACCESS    : 2
+# ACM       : >= 2
+#
+
 import os
 import sys
-import time 
+import time
 import json
 import random
 import commands
@@ -13,12 +22,11 @@ from  optparse import OptionParser
 sys.path.append("%s/../" % os.path.dirname(os.path.abspath( __file__ )))
 import ssa_tools_utils
 
-########################### CONSTANTS ###################################
+################ CONSTANTS ###################################
 (TYPE, STATUS, LID, GID, VERSION) = (0, 1, 2, 3, 4)
 
 ib_acme         = '/usr/local/bin/ib_acme'
-retries         = 30
-sample_size     = 10
+sample_size     = 5
 ##############################################################
 
 def get_opts ():
@@ -27,12 +35,12 @@ def get_opts ():
                       dest = 'topology', \
                       help = 'Provide file with SSA setup topology', \
                       metavar = 'setup_example.ini')
-    
+
     (options, _) = parser.parse_args()
     if not options.topology:
         parser.print_help()
         sys.exit(1)
-    
+
     if not os.path.exists(options.topology):
         print '%s not found' % options.topology
         sys.exit(1)
@@ -43,61 +51,228 @@ def get_data (topology):
     json_file_str   = commands.getoutput('%s/maintain.py -t %s --setup status|grep Saved' % (ssa_tools_utils.SSA_HOME, topology))
     json_file       = json_file_str.split()[2]
     print '%s/maintain.py -t %s --setup status|grep Saved' % (ssa_tools_utils.SSA_HOME, topology)
-    
+
     json_data   = open(json_file).read()
     data        = json.loads(json_data)
     pprint(data)
 
     return data
 
-def sanity_test_0 (cores, als, acms, data):
+
+def test_acm_by_lid_query (node, slid, dlid):
 
     status = 0
 
-    print 'CORE nodes:'
-    for node in cores:
-        print '%s %s' % ( node, data[node][LID] )
-    
-    print 'ACCESS nodes:'
-    for node in als:
-        print '%s %s' % ( node, data[node][LID] )
-    
-    print 'ACM nodes:'
-    for node in acms:
-        print '%s %s' % ( node, data[node][LID] )
-    
-    #for node in acms:
-    #    if node == '': continue
-    #    (_, sgid) = ssa_tools_utils.execute_on_remote("/usr/sbin/ibaddr |awk '{print $2}'", node)
-    #    slid = data[node][LID]
-    #
-    #    (_, _) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, osmgid, sgid), node)
-    #    (_, _) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, osmlid, slid), node)
-    #    time.sleep(10)
-    #        
-    #    print 'Testing %s with %d GIDs' % (node, len(sample_gids))
-    #    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    #    print 'Before GID test\n', out0
-    #    for gid in sample_gids:        
-    #        print '%s#  %s -f g -d %s -s %s -c -v' % (node, ib_acme, gid, sgid)
-    #        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    #        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, gid, sgid), node)
-    #        print out
-    #        if out.find('failed') >= 0 and out.find('success') < 0:
-    #            print 'ERROR. ACM on %s failed' % node
-    #            status = 1    
-    #            break
-    #        (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    #        if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
-    #            print 'ERROR. %s PR was not taken from cache' % node
-    #            status = 2
-    #            break
-    #    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    #    print 'After GID test\n', out0
-    #
-    #print 'Run on %d nodes, each to %d s' % ( len(acms), len(sample_gids))
-    
+    print '%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node
+    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node)
+    print out
+
+    if out.find('failed') >= 0 and out.find('success') < 0:
+        print 'ERROR. ACM on %s failed' % node
+        (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+        print o
+        status = 1
+
+    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    try:
+        if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
+            print 'ERROR. %s PR was not taken from cache' % node
+            (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+            print o
+            status = 2
+    except:
+        print 'ERROR. %s failed' % node
+        (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+        print o
+        status = 3
+
     return status
+
+def test_acm_by_lid (acms, sample_lids, data):
+
+    status = 0
+
+    for node in acms:
+
+        if node == '':
+            continue
+
+        slid = data[node][LID]
+
+        print 'Testing %s with %d LIDs' % (node, len(sample_lids))
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'Before LID test', out0
+
+        for lid in sample_lids:
+            status = test_acm_by_lid_query(node, slid, lid)
+            if status != 0:
+                break
+
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'After LID test\n', out0
+
+    print 'Run on %d nodes, each to %d lids' % (len(acms), len(sample_lids))
+
+    return status
+
+def test_acm_by_gid_query (node, sgid, dgid):
+
+    status = 0
+
+    print '%s#  %s -f g -d %s -s %s -c -v' % (node, ib_acme, dgid, sgid)
+    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, dgid, sgid), node)
+    print out
+
+    if out.find('failed') >= 0 and out.find('success') < 0:
+        print 'ERROR. ACM on %s failed' % node
+        status = 1
+
+    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
+        print 'ERROR. %s PR was not taken from cache' % node
+        status = 2
+
+    return status
+
+
+def test_acm_by_gid (acms, sample_gids, data):
+
+    status = 0
+
+    for node in acms:
+
+        if node == '':
+            continue
+
+        (_, sgid)   = ssa_tools_utils.execute_on_remote("/usr/sbin/ibaddr |awk '{print $2}'", node)
+
+        print 'Testing %s with %d GIDs' % (node, len(sample_gids))
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'Before GID test\n', out0
+
+        for gid in sample_gids:
+
+            status = test_acm_by_gid_query(node, sgid, gid)
+            if status != 0:
+                break
+
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'After GID test\n', out0
+
+    print 'Run on %d nodes, each to %d gids' % (len(acms), len(sample_gids))
+    return status
+
+
+def sanity_test_0 (cores, als, acms, lids, gids, data):
+
+    hostname    = commands.getoutput('hostname')
+    slid        = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'").rstrip('\n')
+    osmlid      = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'").rstrip('\n')
+    osmgid      = commands.getoutput("/usr/sbin/saquery --src-to-dst %s:%s|grep dgid" % ( slid, osmlid)).split('.')[-1]
+
+    if len(osmlid.split() + slid.split() + osmgid.split() + hostname.split()) != 4 :
+            print 'Failed to get basic info'
+            print "/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'\n%s" % osmlid
+            print "/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'\n%s" % slid
+            print "/usr/sbin/saquery --src-to-dst %s:%s|grep dgid\n%s" % ( slid, osmlid, osmgid)
+            print "hostname\n%s" % hostname
+            sys.exit(1)
+
+    # Initial ib_acme query in order to make sure there was PRDB update
+    for node in acms:
+        if node == '':
+            continue
+
+        (_, sgid)   = ssa_tools_utils.execute_on_remote("/usr/sbin/ibaddr |awk '{print $2}'", node)
+        slid        = data[node][LID]
+
+        (_, _)      = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, osmgid, sgid), node)
+        (_, _)      = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, osmlid, slid), node)
+        time.sleep(10)
+
+
+    sample_gids = random.sample(gids, min(len(gids), sample_size))
+    sample_lids = random.sample(lids, min(len(lids), sample_size))
+
+    status = test_acm_by_gid(acms, sample_gids, data)
+    if status != 0:
+        return status
+
+    status = test_acm_by_lid(acms, sample_lids, data)
+    if status != 0:
+        return status
+
+    return status
+
+
+def stop_services (core, access, acm):
+    status = 0
+
+    sm_master   = ssa_tools_utils.core(core)
+    access_svc  = ssa_tools_utils.access(access)
+    acm_svc     = ssa_tools_utils.acm(acm)
+
+    print '[%s] Stop MASTER SM' % time.strftime("%b %d %H:%M:%S")
+    sm_master.stop()
+    print '[%s] Stop ACCESS layer' % time.strftime("%b %d %H:%M:%S")
+    access_svc.stop()
+    print '[%s] Stop ACM layer' % time.strftime("%b %d %H:%M:%S")
+    acm_svc.stop()
+    print 'Wait'
+    time.sleep(120)
+
+    return status
+
+
+def sanity_test_1 (cores, als, acms, lids, gids, data):
+
+    status = 0
+
+    osmlid      = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'").rstrip('\n')
+
+    for core in cores:
+        if data[core][LID] == osmlid:
+            core_master = core
+            break
+
+    access_svc  = als[0]
+    acm_svc     = acms[0]
+
+    for acm in acms:
+        if acm == acm_svc:
+            continue
+
+        status = test_acm_by_lid_query(acm, data[acm][LID], data[acm_svc][LID])
+        if status != 0:
+            return status
+
+        status = test_acm_by_gid_query(acm, data[acm][GID], data[acm_svc][GID])
+        if status != 0:
+            return status
+
+    stop_services(core_master, access_svc, acm_svc)
+
+    for acm in acms:
+        if acm == acm_svc:
+            continue
+
+        status = test_acm_by_lid_query(acm, data[acm][LID], data[acm_svc][LID])
+        if status == 0:
+            print 'ERROR. ACM %s still exists in %s LID cache' % (acm_svc, acm)
+            return status
+
+        status = test_acm_by_gid_query(acm, data[acm][GID], data[acm_svc][GID])
+        if status == 0:
+            print 'ERROR. ACM %s still exists in %s GID cache' % (acm_svc, acm)
+            return status
+
+    if status != 0:
+        status = 0
+
+    return status
+
 
 def main (argv):
 
@@ -112,39 +287,37 @@ def main (argv):
     #
     fabric_data = get_data(opts.topology)
 
-    hostname    = commands.getoutput('hostname')
-    slid        = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'").rstrip('\n')
-    osmlid      = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'").rstrip('\n')
-    osmgid      = commands.getoutput("/usr/sbin/saquery --src-to-dst %s:%s|grep dgid" % ( slid, osmlid)).split('.')[-1]
-    
-    if len(osmlid.split() + slid.split() + osmgid.split() + hostname.split()) != 4 :
-            print 'Failed to get basic info'
-            print "/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'\n%s" % osmlid
-            print "/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'\n%s" % slid
-            print "/usr/sbin/saquery --src-to-dst %s:%s|grep dgid\n%s" % ( slid, osmlid, osmgid)
-            print "hostname\n%s" % hostname
-            sys.exit(1)
-    
     cores   = []
     als     = []
     acms    = []
-    
+
+    lids    = []
+    gids    = []
+
     status  = 0
-    
+
     for node in fabric_data.keys():
         if fabric_data[node][STATUS] != 'RUNNING':
             continue
-        elif fabric_data[node][type] == 'core':
+        elif fabric_data[node][TYPE] == 'core':
             cores.append(node)
-        elif fabric_data[node][type] == 'access':
+        elif fabric_data[node][TYPE] == 'access':
             als.append(node)
         elif fabric_data[node][TYPE] == 'acm':
             acms.append(node)
-    
-    if len(cores) < 2 or len(als) < 2 or len(acms) < 2:
+
+        try:
+            lids.append(int(fabric_data[node][LID]))
+            gids.append(fabric_data[node][GID].encode('ascii','ignore'))
+        except:
+            pass
+
+    if len(cores) != 2 or len(als) != 2 or len(acms) < 2:
         status = 1
     else:
-        status = sanity_test_0(cores, als, acms, fabric_data)
+        status = sanity_test_0(cores, als, acms, lids, gids, fabric_data)
+        #if status == 0:
+        #    status = sanity_test_1(cores, als, acms, lids, gids, fabric_data)
 
     if status == 0:
         print 'PASSED %s' % __file__

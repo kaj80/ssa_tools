@@ -59,27 +59,34 @@ def get_data (topology):
     return data
 
 
-def test_acm_by_lid_query (node, slid, dlid):
+def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     status = 0
+
+    if initial_query == 1:
+        print 'Executing initial ib_acme query on %s (lid %s) node' % (node, slid)
+        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node)
+        time.sleep(5)
 
     print '%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node
     (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
     (rc, out) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node)
-    print out
+    #print out
 
     if out.find('failed') >= 0 and out.find('success') < 0:
-        print 'ERROR. ACM on %s failed' % node
-        (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
-        print o
+        if print_err == 1:
+            print 'ERROR. ACM on %s failed' % node
+            (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+            print o
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
     try:
         if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
-            print 'ERROR. %s PR was not taken from cache' % node
-            (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
-            print o
+            if print_err == 1:
+                print 'ERROR. %s PR was not taken from cache' % node
+                (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+                print o
             status = 2
     except:
         print 'ERROR. %s failed' % node
@@ -116,22 +123,29 @@ def test_acm_by_lid (acms, sample_lids, data):
 
     return status
 
-def test_acm_by_gid_query (node, sgid, dgid):
+def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
 
     status = 0
+
+    if initial_query == 1:
+        print 'Executing initial ib_acme query on %s (gid %s) node' % (node, sgid)
+        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, dgid, sgid), node)
+        time.sleep(5)
 
     print '%s#  %s -f g -d %s -s %s -c -v' % (node, ib_acme, dgid, sgid)
     (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
     (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, dgid, sgid), node)
-    print out
+    #print out
 
     if out.find('failed') >= 0 and out.find('success') < 0:
-        print 'ERROR. ACM on %s failed' % node
+        if print_err == 1:
+            print 'error. acm on %s failed' % node
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
     if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
-        print 'ERROR. %s PR was not taken from cache' % node
+        if print_err == 1:
+            print 'error. %s pr was not taken from cache' % node
         status = 2
 
     return status
@@ -207,6 +221,39 @@ def sanity_test_0 (cores, als, acms, lids, gids, data):
     return status
 
 
+def get_node_remote (node):
+    #
+    # HACK: it is assumed that node machine is connected to a remote node with port 1
+    #
+    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery PI -D 0,1 | grep ^Lid', 'dev-r-vrt-045')
+    remote_lid = out.split('.')[-1].rsplit('\n')[0]
+
+    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery NI -D 0,1 | grep LocalPort', 'dev-r-vrt-045')
+    remote_port = out.split('.')[-1].rsplit('\n')[0]
+
+    return (remote_lid, remote_port)
+
+
+def start_services (core, access, acm):
+    status = 0
+
+    sm_master   = ssa_tools_utils.core(core)
+    access_svc  = ssa_tools_utils.access(access)
+    acm_svc     = ssa_tools_utils.acm(acm)
+
+    print '[%s] Start MASTER SM' % time.strftime("%b %d %H:%M:%S")
+    sm_master.start()
+    print '[%s] Start ACCESS layer' % time.strftime("%b %d %H:%M:%S")
+    access_svc.start()
+    print '[%s] Start ACM layer' % time.strftime("%b %d %H:%M:%S")
+    acm_svc.start()
+
+    print 'Wait'
+    time.sleep(60)
+
+    return status
+
+
 def stop_services (core, access, acm):
     status = 0
 
@@ -220,13 +267,11 @@ def stop_services (core, access, acm):
     access_svc.stop()
     print '[%s] Stop ACM layer' % time.strftime("%b %d %H:%M:%S")
     acm_svc.stop()
-    print 'Wait'
-    time.sleep(120)
 
     return status
 
 
-def sanity_test_1 (cores, als, acms, lids, gids, data):
+def sanity_test_1 (cores, als, acms, data):
 
     status = 0
 
@@ -243,7 +288,7 @@ def sanity_test_1 (cores, als, acms, lids, gids, data):
     for acm in acms:
         if acm == acm_svc:
             continue
-
+        
         status = test_acm_by_lid_query(acm, data[acm][LID], data[acm_svc][LID])
         if status != 0:
             return status
@@ -254,22 +299,39 @@ def sanity_test_1 (cores, als, acms, lids, gids, data):
 
     stop_services(core_master, access_svc, acm_svc)
 
+    # Disconect ACM from fabric
+    (remote_lid, remote_port) = get_node_remote(acm_svc)
+    cmd = 'ibportstate %s %s disable' % (remote_lid, remote_port)
+    print cmd
+    ssa_tools_utils.pdsh_run(core_master, cmd)
+    print 'Wait'
+    time.sleep(120)
+
     for acm in acms:
         if acm == acm_svc:
             continue
 
-        status = test_acm_by_lid_query(acm, data[acm][LID], data[acm_svc][LID])
+        status = test_acm_by_lid_query(acm, data[acm][LID], data[acm_svc][LID], initial_query = 1, print_err = 0)
         if status == 0:
-            print 'ERROR. ACM %s still exists in %s LID cache' % (acm_svc, acm)
-            return status
+            print 'ERROR. ACM %s LID %s still exists in %s LID %s cache' % \
+                    (acm_svc, str(data[acm_svc][LID]), acm, str(data[acm][LID]))
+            return 1
 
-        status = test_acm_by_gid_query(acm, data[acm][GID], data[acm_svc][GID])
+        status = test_acm_by_gid_query(acm, data[acm][GID], data[acm_svc][GID], print_err = 0)
         if status == 0:
-            print 'ERROR. ACM %s still exists in %s GID cache' % (acm_svc, acm)
-            return status
+            print 'ERROR. ACM %s GID %s still exists in %s GID %s cache' % \
+                    (acm_svc, str(data[acm_svc][GID]), acm, str(data[acm][GID]))
+            return 1
 
-    if status != 0:
-        status = 0
+    # Reconnect ACM back to fabric
+    cmd = 'ibportstate %s %s enable' % (remote_lid, remote_port)
+    print cmd
+    # command can be run on any node except for the disconected ACM
+    ssa_tools_utils.pdsh_run(core_master, cmd)
+    time.sleep(60)
+
+    start_services(core_master, access_svc, acm_svc)
+    status = not status
 
     return status
 
@@ -316,8 +378,8 @@ def main (argv):
         status = 1
     else:
         status = sanity_test_0(cores, als, acms, lids, gids, fabric_data)
-        #if status == 0:
-        #    status = sanity_test_1(cores, als, acms, lids, gids, fabric_data)
+        if status == 0:
+            status = sanity_test_1(cores, als, acms, fabric_data)
 
     if status == 0:
         print 'PASSED %s' % __file__

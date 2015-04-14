@@ -43,7 +43,9 @@ class mpi():
         return 0
                         
     def run(self):              
-        command = 'sudo %s/bin/mpirun %s' % ( self.home, ' '.join([self.np, self.hosts, self.options, self.benchmark, self.benchmark_options ]))
+        command = 'sudo LD_LIBRARY_PATH=%s %s/bin/mpirun %s' % \
+                ( self.home + '/lib', self.home, \
+                  ' '.join([self.np, self.hosts, self.options, self.benchmark, self.benchmark_options ]))
         self.connection.run(command)
         f = open(self.log, 'w')
         print self.connection.output

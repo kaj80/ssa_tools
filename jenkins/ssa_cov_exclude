@@ -1,0 +1,3 @@
+!tests/
+!shared/ssa_signal_handler.c
+!shared/ssa_db_helper.c

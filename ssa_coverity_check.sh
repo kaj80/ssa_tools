@@ -13,19 +13,16 @@ function static {
     git clone https://github.com/hnrose/ibssa2.git
     echo "*************************  Checking SSA ***********************************"
     module="SSA"
-    coverity_tmp_dir=$coverity_dir
+    coverity_tmp_dir=ibssa2
     pushd $coverity_tmp_dir
-    pushd ibssa2
     ./autogen.sh
     ./configure
-    ${cov_bin_dir}/cov-build --dir ${coverity_tmp_dir} make -j
+    ${cov_bin_dir}/cov-build --dir ${coverity_tmp_dir} make -j4
     ${cov_bin_dir}/cov-analyze --dir ${coverity_tmp_dir}
-    #${cov_bin_dir}/cov-format-errors --dir ${coverity_tmp_dir} --emacs-style 2>&1|tee > coverity_SSA.log
-    ${cov_bin_dir}/cov-format-errors --dir ${coverity_tmp_dir}  2>&1|tee > coverity_SSA.log
+    ${cov_bin_dir}/cov-format-errors --dir ${coverity_tmp_dir} --emacs-style 2>&1|tee > coverity_SSA.log
     echo "FINISHED Checking $coverity_dir/coverity_SSA.log ***********************************"
     popd
-    popd
-    popd
+    popd    
 }
 
 function dynamic {

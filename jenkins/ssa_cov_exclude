@@ -4,3 +4,4 @@
 !access/src/ssa_path_record.c:ssa_pr_whole_world
 !conftest.c
 !core.c:core_process_leave
+!:show_usage

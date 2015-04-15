@@ -26,7 +26,7 @@ import ssa_utils
 rch_global_dict = {}
 rch_global_dict['test_description'] = {}
 rch_global_dict['email_sender'] = 'lennyb'
-rch_global_dict['email_recv'] = 'lennyb@mellanox.com'
+rch_global_dict['email_recv'] = 'null@mellanox.com'
 rch_global_dict['coverage_exclude'] = '%s/BullseyeCoverageExclusionsSSA_20150119' % os.path.dirname(os.path.abspath( __file__ ))
 rch_global_dict['scretch_folder'] = '/tmp/ssa_upstream'
 

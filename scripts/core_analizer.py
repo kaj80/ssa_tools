@@ -7,7 +7,7 @@ import commands
 import datetime
 from optparse import OptionParser
 
-MAILTO = 'lennyb@mellanox.com'
+MAILTO = 'null@mellanox.com'
 TOPO = None
 ARCHIVE = '/proj/SSA/Mellanox/logs'
 NFS_TMP = '%s/../tmp/' % ARCHIVE

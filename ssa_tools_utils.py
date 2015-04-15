@@ -55,14 +55,14 @@ IPERF = 'perf'
 #this is changed from runner.py
 MEMCHECK = None
 
-VALGRIND_OPTS = ''
+VALGRIND_OPTS = '--xml=yes '
 
 if MEMCHECK == 'LEAKCHECK':
-    VALGRIND_OPTS = '--leak-check=full -v'
+    VALGRIND_OPTS += '--leak-check=full -v'
 elif MEMCHECK == 'VALGRIND':
-    VALGRIND_OPTS = '--show-reachable=yes --undef-value-errors=no -v'
+    VALGRIND_OPTS += '--show-reachable=yes --undef-value-errors=no -v'
 elif MEMCHECK == 'HELGRIND':
-    VALGRIND_OPTS = '--tool=helgrind'
+    VALGRIND_OPTS += '--tool=helgrind'
 
 #--sim-hints=deactivate-pthread-stack-cache-via-hack
 #-free-is-write=yes   // experimental, default no

@@ -380,7 +380,7 @@ class ssa(object):
         pass
 
     def start(self):
-         s = self.connection.run('%s %s %s' % (self.bin, self.cfg_opt, self.opts_file))
+         s = self.connection.run('LD_LIBRARY_PATH=/usr/local/lib %s %s %s' % (self.bin, self.cfg_opt, self.opts_file))
          return s
 
     def restart(self):

@@ -2,6 +2,6 @@
 !shared/ssa_signal_handler.c
 !shared/ssa_db_helper.c
 !access/src/ssa_path_record.c:ssa_pr_whole_world
-!conftest.c
+!**/conftest.c
 !core.c:core_process_leave
-!:show_usage
+!**/*:show_usage

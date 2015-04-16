@@ -453,7 +453,7 @@ class acm(ssa):
         self.bin = '/usr/local/sbin/ibacm'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['acm_valgrind_logfile']
-            self.bin = 'valgrind %s --log-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
+            self.bin = 'valgrind %s --xml-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
 
 
 class distrib(ssa):
@@ -465,7 +465,7 @@ class distrib(ssa):
         self.bin = '/usr/local/sbin/ibssa'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['distrib_valgrind_logfile']
-            self.bin = 'valgrind %s --log-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
+            self.bin = 'valgrind %s --xml-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
 
 
 class access(ssa):
@@ -477,7 +477,7 @@ class access(ssa):
         self.bin = '/usr/local/sbin/ibssa'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['access_valgrind_logfile']
-            self.bin = 'valgrind %s --log-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
+            self.bin = 'valgrind %s --xml-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
 
 class core(ssa):
     def __init__(self, host = 'localhost'):
@@ -489,7 +489,7 @@ class core(ssa):
         self.cfg_opt = '-F'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['plugin_valgrind_logfile']
-            self.bin = 'valgrind %s --log-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
+            self.bin = 'valgrind %s --xml-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
 
     def get_status(self):
         if MEMCHECK:

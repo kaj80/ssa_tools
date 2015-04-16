@@ -526,7 +526,7 @@ class ib_acme():
         self.output = None
 
     def run(self, options = ''):
-        self.connection.run('%s %s' % (self.cmd, options))
+        self.connection.run('LD_LIBRARY_PATH=/usr/local/lib %s %s' % (self.cmd, options))
         self.output = self.connection.output
         return self.connection.status
 

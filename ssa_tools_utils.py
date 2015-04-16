@@ -77,7 +77,7 @@ CFG_FILES = {'opensm_cfg': '/usr/local/etc/rdma/opensm.conf',
              'plugin_logfile': '/var/log/ibssa.log',
              'core_logfile': '/var/log/ibssa.log',
              'plugin_config': '/usr/local/etc/rdma/ibssa_core_opts.cfg',
-             'plugin_valgrind_logfile': '/var/log/ibssa_core.log.valgrind',
+             'plugin_valgrind_logfile': '/var/log/ibssa_core.log.valgrind.xml',
 
 
              'smdb_dump' : 3,   # 0 - no dump, 1 - Binary, 2 - Debug, 3-human readble
@@ -85,15 +85,15 @@ CFG_FILES = {'opensm_cfg': '/usr/local/etc/rdma/opensm.conf',
              'acm_opts':'/usr/local/etc/rdma/ibacm_opts.cfg',
              'acm_addr':'/usr/local/etc/rdma/ibacm_addr.cfg',
              'acm_logfile' : '/var/log/ibacm.log',
-             'acm_valgrind_logfile': '/var/log/ibacm.log.valgrind',
+             'acm_valgrind_logfile': '/var/log/ibacm.log.valgrind.xml',
 
              'distrib_logfile': '/var/log/ibssa.log',
              'distrib_opts': '/usr/local/etc/rdma/DL_ibssa_opts.cfg',
-             'distrib_valgrind_logfile': '/var/log/ibssa.log.valgrind',
+             'distrib_valgrind_logfile': '/var/log/ibssa.log.valgrind.xml',
 
              'access_opts':'/usr/local/etc/rdma/AL_ibssa_opts.cfg',
              'access_logfile': '/var/log/ibssa.log',
-             'access_valgrind_logfile': '/var/log/ibssa.log.valgrind',
+             'access_valgrind_logfile': '/var/log/ibssa.log.valgrind.xml',
              }
 
 

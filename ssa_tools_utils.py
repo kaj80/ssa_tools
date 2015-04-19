@@ -94,6 +94,10 @@ CFG_FILES = {'opensm_cfg': '/usr/local/etc/rdma/opensm.conf',
              'access_opts':'/usr/local/etc/rdma/AL_ibssa_opts.cfg',
              'access_logfile': '/var/log/ibssa.log',
              'access_valgrind_logfile': '/var/log/ibssa.log.valgrind.xml',
+
+             'core_lockfile': '/var/run/ibssa.pid',
+             'acm_lockfile': '/var/run/ibssa.pid',
+             'distrib_lockfile': '/var/run/ibacm.pid'
              }
 
 
@@ -246,7 +250,7 @@ def ssa_clean_setup(ssa_global_dict):
 
     cmds = []
     for k in CFG_FILES.keys():
-        if k.endswith('_logfile'):
+        if k.endswith('_logfile') or k.endswith('_lockfile'):
             cmds.append('rm -f %s*' % CFG_FILES[k])
     if MEMCHECK:
         cmds.append('kill -9 `ps -ef |grep valgrind`' )

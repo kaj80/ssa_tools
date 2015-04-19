@@ -55,7 +55,7 @@ IPERF = 'perf'
 #this is changed from runner.py
 MEMCHECK = None
 
-VALGRIND_OPTS = '--xml=yes '
+VALGRIND_OPTS = '--xml=yes  --trace-children=yes '
 
 if MEMCHECK == 'LEAKCHECK':
     VALGRIND_OPTS += '--leak-check=full -v'

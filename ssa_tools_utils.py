@@ -58,9 +58,9 @@ MEMCHECK = None
 VALGRIND_OPTS = '--xml=yes  --trace-children=yes '
 
 if MEMCHECK == 'LEAKCHECK':
-    VALGRIND_OPTS += '--leak-check=full -v'
+    VALGRIND_OPTS += '--leak-check=full '
 elif MEMCHECK == 'VALGRIND':
-    VALGRIND_OPTS += '--show-reachable=yes --undef-value-errors=no -v'
+    VALGRIND_OPTS += '--show-reachable=yes --undef-value-errors=no '
 elif MEMCHECK == 'HELGRIND':
     VALGRIND_OPTS += '--tool=helgrind'
 

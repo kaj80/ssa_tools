@@ -380,7 +380,7 @@ class ssa(object):
         pass
 
     def start(self):
-         s = self.connection.run('LD_LIBRARY_PATH=/usr/local/lib %s %s %s' % (self.bin, self.cfg_opt, self.opts_file))
+         s = self.connection.run('COVFILE=/tmp/%s.cov LD_LIBRARY_PATH=/usr/local/lib %s %s %s' % (self.host, self.bin, self.cfg_opt, self.opts_file))
          return s
 
     def restart(self):
@@ -526,7 +526,7 @@ class ib_acme():
         self.output = None
 
     def run(self, options = ''):
-        self.connection.run('LD_LIBRARY_PATH=/usr/local/lib %s %s' % (self.cmd, options))
+        self.connection.run('COVFILE=/tmp/%s.cov LD_LIBRARY_PATH=/usr/local/lib %s %s' % (self.host, self.cmd, options))
         self.output = self.connection.output
         return self.connection.status
 

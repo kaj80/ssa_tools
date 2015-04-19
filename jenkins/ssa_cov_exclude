@@ -1,4 +1,5 @@
 !tests/
+!ibssautil
 !shared/ssa_signal_handler.c
 !shared/ssa_db_helper.c
 !access/src/ssa_path_record.c:ssa_pr_whole_world

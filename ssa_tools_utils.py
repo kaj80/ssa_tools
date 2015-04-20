@@ -89,11 +89,11 @@ CFG_FILES = {'opensm_cfg': '/usr/local/etc/rdma/opensm.conf',
 
              'distrib_logfile': '/var/log/ibssa.log',
              'distrib_opts': '/usr/local/etc/rdma/DL_ibssa_opts.cfg',
-             'distrib_valgrind_logfile': '/var/log/ibssa.log.valgrind.xml',
+             'distrib_valgrind_logfile': '/var/log/ibssa.distrib.log.valgrind.xml',
 
              'access_opts':'/usr/local/etc/rdma/AL_ibssa_opts.cfg',
              'access_logfile': '/var/log/ibssa.log',
-             'access_valgrind_logfile': '/var/log/ibssa.log.valgrind.xml',
+             'access_valgrind_logfile': '/var/log/ibssa.access.log.valgrind.xml',
 
              'core_lockfile': '/var/run/ibssa.pid',
              'acm_lockfile': '/var/run/ibssa.pid',

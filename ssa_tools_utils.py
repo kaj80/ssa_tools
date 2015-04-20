@@ -254,12 +254,10 @@ def ssa_clean_setup(ssa_global_dict):
     for k in CFG_FILES.keys():
         if k.endswith('_logfile') or k.endswith('_lockfile'):
             cmds.append('rm -f %s*' % CFG_FILES[k])
-    if MEMCHECK:
-        cmds.append('kill -9 `ps -ef |grep valgrind`' )
 
     for i in ['opensm', 'ibacm', 'ibssa']:
         cmds.append('/usr/local/etc/init.d/%s stop' % i)
-        cmds.append('kill -9 `ps -ef |grep %s`' % i)
+        cmds.append('pkill -9 -f  %s`' % i)
         cmds.append('rm -rf /var/lock/subsys/%s /var/run/%s.pid /var/log/ibssa.log /var/log/ibacm.log' % (i, i) )
     cmds.append('rm -rf /etc/rdma/*db_dump.*')
     cmds.append('/bin/dmesg -c >/dev/null' )
@@ -377,6 +375,7 @@ class ssa(object):
         self.opts_file = None
         self.make_default_config()
         self.bin = None
+        self.basenem = None
         self.daemon = None
         self.cfg_opt = '-O'
         if MEMCHECK:
@@ -399,12 +398,12 @@ class ssa(object):
         self.connection.run('pgrep %s' % os.path.basename(self.bin))
         if self.connection.output:
             print 'ERROR. %s was not stopped. Killing it' % os.path.basename(self.bin)
-            self.connection.run('kill -9 %s' % self.connection.output)
+            self.connection.run('pkill -9 -f  %s' % self.basename)
 
 
 
     def kill(self):
-        return self.connection.run('kill -9 `pgrep %s` ' % os.path.basename(self.bin))
+        return self.connection.run('pkill -9 -f %s` ' % self.basename)
 
     def get_status(self):
         if MEMCHECK:
@@ -457,6 +456,7 @@ class acm(ssa):
         self.log = CFG_FILES['acm_logfile']
         self.opts_file = CFG_FILES['acm_opts']
         self.bin = '/usr/local/sbin/ibacm'
+        self.basename = 'ibacm'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['acm_valgrind_logfile']
             self.bin = 'valgrind %s --xml-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
@@ -469,6 +469,7 @@ class distrib(ssa):
         self.log = CFG_FILES['distrib_logfile']
         self.opts_file = CFG_FILES['distrib_opts']
         self.bin = '/usr/local/sbin/ibssa'
+        self.basename = 'ibssa'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['distrib_valgrind_logfile']
             self.bin = 'valgrind %s --xml-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
@@ -481,6 +482,7 @@ class access(ssa):
         self.log = CFG_FILES['access_logfile']
         self.opts_file = CFG_FILES['access_opts']
         self.bin = '/usr/local/sbin/ibssa'
+        self.basename = 'ibssa'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['access_valgrind_logfile']
             self.bin = 'valgrind %s --xml-file=%s %s' % (VALGRIND_OPTS, self.valgrind_log, self.bin)
@@ -492,6 +494,7 @@ class core(ssa):
         self.log = [CFG_FILES['plugin_logfile'], CFG_FILES['osm_logfile'] ]
         self.opts_file = CFG_FILES['opensm_cfg']
         self.bin = "%s -B " % CFG_FILES['opensm']
+        self.basename = 'opensm'
         self.cfg_opt = '-F'
         if MEMCHECK:
             self.valgrind_log = CFG_FILES['plugin_valgrind_logfile']
@@ -506,14 +509,13 @@ class core(ssa):
 
     def stop(self):
         if MEMCHECK:
-            s = self.connection.run('pidof %s' % 'valgrind')
-            s = self.connection.run('kill -TERM %s' % self.connection.output)
+            s = self.connection.run('pkill -TERM -f %s' % self.basename)
         else:
             self.connection.run('/usr/local/etc/init.d/%s stop' % os.path.basename(self.daemon))
             self.connection.run('pgrep opensm')
             if self.connection.output:
                 print 'ERROR. OpenSM was not stopped. Killing it'
-                self.connection.run('kill -9 %s' % self.connection.output)
+                self.connection.run('pkill -TERM -f %s' % 'opensm')
 '''
 ./configure --enable-openib-rdmacm-ibaddr --prefix $PREFIX --enable-mpirun-prefix-by-default --with-verbs=/usr/local --enable-debug --disable-openib-connectx-xrc
 

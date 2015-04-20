@@ -244,6 +244,8 @@ def ssa_clean_setup(ssa_global_dict):
     cmds = []
     for i in ['opensm', 'ibacm', 'ibssa']:
         cmds.append('/usr/local/etc/init.d/%s stop' % i)
+    for i in ['opensm', 'ibacm', 'ibssa']:
+        cmds.append('pkill -9 -f %s' % i)
     rm_exec(cmds, node_list)
     time.sleep(10)
 

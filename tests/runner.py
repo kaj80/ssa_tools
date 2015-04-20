@@ -233,8 +233,8 @@ while ( 1 ):
         if options.mem_check_methode:
             valg_dir = '%s/%s_%s' % (rch_global_dict['memcheck_folder'], time.strftime("%Y%m%d_%H%M"), test_name)
             os.mkdir(valg_dir)
-            ssa_tools_utils.pdsh_run(rch_global_dict['nodes'],'cd /var/log/; s=`ls *.log.valgrind*`; n=`basename ${s}`_`hostname`;cp $s %s/$n' % valg_dir)
-            print 'cd /var/log/; s=`ls *.log.valgrind`; n=`basename ${s}`_`hostname`;cp $s %s/$n' % valg_dir
+            ssa_tools_utils.pdsh_run(rch_global_dict['nodes'],'cd /var/log/; s=`ls *.log.valgrind*`; n=`basename ${s} .xml`_`hostname`.xml;cp $s %s/$n' % valg_dir)
+            print 'cd /var/log/; s=`ls *.log.valgrind*`; n=`basename ${s}`_`hostname`;cp $s %s/$n' % valg_dir
             gDictParams['%s test' % options.mem_check_methode] = ['WARN', valg_dir]
 
         gDictParams[test].append(logfile)

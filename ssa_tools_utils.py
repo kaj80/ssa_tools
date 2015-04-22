@@ -403,7 +403,11 @@ class ssa(object):
 
 
     def kill(self):
-        return self.connection.run('pkill -9 -f %s` ' % self.basename)
+        s = self.connection.run('pkill -9 -f %s` ' % self.basename)
+        for k in CFG_FILES.keys():
+            if k.endswith('_lockfile'):
+                self.connection.run('rm -f %s*' % CFG_FILES[k])
+        return s
 
     def get_status(self):
         if MEMCHECK:

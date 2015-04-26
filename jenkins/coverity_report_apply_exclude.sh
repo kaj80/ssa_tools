@@ -33,17 +33,19 @@ fi
 for node_type in core distrib access acm; do
     node_label=$node_type"_nodes"
     exclude_file=$MY_DIR/$node_type".BullseyeCoverageExclusions"
-    echo $node_type
-    echo $node_label
-    echo $exclude_file
+    echo "Process $node_type"
     if [ -f $exclude_file ]; then
+    	echo "Apply $exclude_file for"
     	nodes_list=`cat $TOPOLOGY|awk "/$node_label/{print"' $2}'`
 	nodes_list=${nodes_list//,/ }
-    	echo $nodes_list
+    	echo "$nodes_list nodes"
 	for node_name in $nodes_list; do
-		$cov_file=$INPUT_FOLDER"/"$node_name".cov"
+		cov_file=$INPUT_FOLDER"/"$node_name".cov"
 		if [ -f $cov_file ]; then
-			echo $cov_file
+			covselect -q  -i $exclude_file -a -f $cov_file;rc=$?
+			if [ $rc -ne 0 ]; then
+				echo "ERROR: covselect -i $exclude_file -a -f $cov_file faled"
+			fi
 		fi
 	done
     fi

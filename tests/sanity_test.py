@@ -315,12 +315,18 @@ def sanity_test_1 (cores, als, acms, data):
         if status == 0:
             print 'ERROR. ACM %s LID %s still exists in %s LID %s cache' % \
                     (acm_svc, str(data[acm_svc][LID]), acm, str(data[acm][LID]))
+            cmd = 'ibportstate %s %s enable' % (remote_lid, remote_port)
+            print cmd
+            ssa_tools_utils.pdsh_run(core_master, cmd)
             return 1
 
         status = test_acm_by_gid_query(acm, data[acm][GID], data[acm_svc][GID], print_err = 0)
         if status == 0:
             print 'ERROR. ACM %s GID %s still exists in %s GID %s cache' % \
                     (acm_svc, str(data[acm_svc][GID]), acm, str(data[acm][GID]))
+            cmd = 'ibportstate %s %s enable' % (remote_lid, remote_port)
+            print cmd
+            ssa_tools_utils.pdsh_run(core_master, cmd)
             return 1
 
     # Reconnect ACM back to fabric

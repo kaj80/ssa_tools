@@ -42,7 +42,7 @@ for node_type in core distrib access acm; do
 	for node_name in $nodes_list; do
 		cov_file=$INPUT_FOLDER"/"$node_name".cov"
 		if [ -f $cov_file ]; then
-			covselect -q  -i $exclude_file -a -f $cov_file;rc=$?
+			covselect -a -f $cov_file -i $exclude_file ;rc=$?
 			if [ $rc -ne 0 ]; then
 				echo "ERROR: covselect -i $exclude_file -a -f $cov_file faled"
 			fi

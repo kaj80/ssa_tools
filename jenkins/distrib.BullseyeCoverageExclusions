@@ -1,0 +1,37 @@
+exclude folder plugin/
+exclude folder access/
+exclude source conftest.c
+exclude folder acm/
+exclude source distrib/conftest.c
+exclude function shared/ssa_signal_handler.c:parse_backtrace_line(const char*,int,FILE*)
+exclude function shared/ssa_signal_handler.c:run_add2line(const char*,const void*,int,FILE*)
+exclude function shared/ssa_signal_handler.c:run_cmd(const char*,char*,int)
+exclude function shared/ssa_signal_handler.c:ssa_print_backtrace(int,FILE*)
+exclude function shared/ssa_signal_handler.c:ssa_print_backtrace_with_gstack(FILE*)
+exclude source shared/ssa_db_helper.c
+exclude function shared/ssa.c:ssa_access_handler(void*)
+exclude function shared/ssa.c:ssa_calculate_prdb(struct ssa_svc*,struct ssa_access_member*)
+exclude function shared/ssa.c:ssa_stop_access(struct ssa_class*)
+exclude function shared/ssa.c:ssa_access_thread_pool_init()
+exclude function shared/ssa.c:ssa_add_access_consumer(struct ssa_svc*,union ibv_gid*,uint16_t,int)
+exclude function shared/ssa.c:ssa_twalk(const struct node_t*,void(*)(const void*,const VISIT,const void*),const void*)
+exclude function shared/ssa.c:ssa_access_map_callback(const void*,const VISIT,const void*)
+exclude function shared/ssa.c:g_al_callback(gpointer,gpointer)
+exclude function shared/ssa.c:ssa_db_update_queue_init(struct ssa_db_update_queue*)
+exclude function shared/ssa.c:prdb_handler_cleanup(void*)
+exclude function shared/ssa.c:ssa_access_process_task(struct ssa_access_task*)
+exclude function shared/ssa.c:ssa_access_send_db_update(struct ssa_svc*,struct ssa_db*,int,int,uint16_t,union ibv_gid*)
+exclude function shared/ssa.c:ssa_access_thread_pool_destroy()
+exclude function shared/ssa.c:ssa_access_wait_for_tasks_completion()
+exclude function shared/ssa.c:ssa_access_prdb_handler(void*)
+exclude function shared/ssa.c:ssa_push_db_update(struct ssa_db_update_queue*,struct ssa_db_update*)
+exclude function shared/ssa.c:ssa_wait_db_update(struct ssa_db_update_queue*)
+exclude function shared/ssa.c:ssa_downstream_conn(struct ssa_svc*,struct ssa_conn*,int)
+exclude function shared/ssa.c:ssa_pull_db_update(struct ssa_db_update_queue*,struct ssa_db_update*)
+exclude function shared/ssa.c:ssa_downstream_handle_epoch_publish(struct ssa_conn*,struct ssa_svc*,struct ssa_msg_hdr*,short)
+exclude function shared/ssa.c:ssa_db_update_queue_destroy(struct ssa_db_update_queue*)
+exclude function shared/ssa.c:ssa_db_update_init(struct ssa_svc*,struct ssa_db*,uint16_t,union ibv_gid*,int,int,uint64_t,struct ssa_db_update*)
+exclude function shared/ssa.c:ssa_riowrite(struct ssa_conn*,short)
+exclude function shared/ssa.c:ssa_riowrite_continue(struct ssa_conn*,short)
+exclude function shared/ssa.c:ssa_compare_gid(const void*,const void*)
+exclude function shared/parse.c:expand(char*,char*,int*,int*)

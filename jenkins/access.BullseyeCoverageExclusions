@@ -1,0 +1,13 @@
+exclude source conftest.c
+exclude folder plugin/
+exclude folder acm/
+exclude source distrib/conftest.c
+exclude function distrib/src/distrib.c:show_usage(char*)
+exclude function access/src/ssa_path_record.c:ssa_pr_whole_world(struct ssa_db*,void*,ssa_pr_path_dump_t,void*)
+exclude source shared/ssa_db_helper.c
+exclude function shared/ssa_signal_handler.c:parse_backtrace_line(const char*,int,FILE*)
+exclude function shared/ssa_signal_handler.c:run_add2line(const char*,const void*,int,FILE*)
+exclude function shared/ssa_signal_handler.c:run_cmd(const char*,char*,int)
+exclude function shared/ssa_signal_handler.c:ssa_print_backtrace(int,FILE*)
+exclude function shared/ssa_signal_handler.c:ssa_print_backtrace_with_gstack(FILE*)
+exclude function shared/parse.c:expand(char*,char*,int*,int*)

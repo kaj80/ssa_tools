@@ -225,10 +225,10 @@ def get_node_remote (node):
     #
     # HACK: it is assumed that node machine is connected to a remote node with port 1
     #
-    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery PI -D 0,1 | grep ^Lid', 'dev-r-vrt-045')
+    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery PI -D 0,1 | grep ^Lid', node)
     remote_lid = out.split('.')[-1].rsplit('\n')[0]
 
-    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery NI -D 0,1 | grep LocalPort', 'dev-r-vrt-045')
+    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery NI -D 0,1 | grep LocalPort', node)
     remote_port = out.split('.')[-1].rsplit('\n')[0]
 
     return (remote_lid, remote_port)

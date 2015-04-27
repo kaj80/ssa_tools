@@ -1,0 +1,25 @@
+exclude function access/src/ssa_path_record.c:ssa_pr_whole_world(struct ssa_db*,void*,ssa_pr_path_dump_t,void*)
+exclude source acm/conftest.c
+exclude function acm/src/acm.c:acm_parse_osm_fullv1_paths(FILE*,uint64_t*,struct acm_ep*)
+exclude function acm/src/acm.c:acm_parse_osm_fullv1_lid2guid(FILE*,uint64_t*)
+exclude function acm/src/acm.c:acm_port_up(struct acm_port*)
+exclude function acm/src/acm.c:acm_parse_hosts_file(struct acm_ep*)
+exclude function acm/src/acm.c:acm_port_join(struct acm_port*)
+exclude function acm/src/acm.c:acm_open_dev(struct ibv_device*)
+exclude function acm/src/acm.c:acm_event_handler(void*)
+exclude function acm/src/acm.c:acm_port_down(struct acm_port*)
+exclude function acm/src/acm.c:acm_join_group(struct acm_ep*,union ibv_gid*,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t)
+exclude function acm/src/acm.c:acm_open_devices(void)
+exclude function acm/src/acm.c:acm_parse_access_v1(struct acm_ep*)
+exclude function acm/src/acm.c:acm_best_mc_index(struct acm_ep*,struct acm_resolve_rec*)
+exclude function acm/src/acm.c:acm_mc_index(struct acm_ep*,union ibv_gid*)
+exclude function acm/src/acm.c:acm_open_port(struct acm_port*,struct acm_device*,uint8_t)
+exclude function acm/src/acm.c:acm_parse_osm_fullv1(struct acm_ep*)
+exclude function acm/src/acm.c:acm_format_mgid(union ibv_gid*,uint16_t,uint8_t,uint8_t,uint8_t)
+exclude function acm/src/acm.c:acm_init_join(struct ib_sa_mad*,union ibv_gid*,uint16_t,uint8_t,uint8_t,uint8_t,uint8_t,uint8_t)
+exclude function acm/src/acm.c:acm_record_mc_av(struct acm_port*,struct ib_mc_member_rec*,struct acm_dest*)
+exclude source distrib/conftest.c
+exclude source plugin/conftest.c
+exclude function plugin/src/core.c:core_process_leave(struct ssa_core*,struct ssa_umad*)
+exclude source conftest.c
+exclude source shared/ssa_db_helper.c

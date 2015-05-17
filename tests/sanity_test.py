@@ -366,7 +366,9 @@ def main (argv):
 
     for node in fabric_data.keys():
         if fabric_data[node][STATUS] != 'RUNNING':
-            continue
+            print 'FAILED one of SSA fabric nodes (%s) is not RUNNING' % node
+            sys.exit(1)
+
         elif fabric_data[node][TYPE] == 'core':
             cores.append(node)
         elif fabric_data[node][TYPE] == 'access':

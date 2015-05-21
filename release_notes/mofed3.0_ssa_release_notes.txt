@@ -115,8 +115,5 @@ mlx4_core HW2SW_MPT -16 error requires update to recent firmware
 (internal build 2.33.1230 or later, GA build 2.33.5000
 for ConnectX-3 Pro).
 
-If running with OpenSM PerfMgr, need OpenSM 3.3.19 or later.
-Possible seg fault in PerfMgr was fixed there.
-
 ACM is only tested in SSA acm_mode and not ACM acm_mode.
 

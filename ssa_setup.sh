@@ -104,7 +104,7 @@ function load_modules {
     sudo /sbin/modprobe ib_umad
     sudo /sbin/modprobe rdma_ucm
     lsmod | grep ib
-    #echo `hostname` > /sys/class/infiniband/mlx*/node_desc
+    echo `hostname` > /sys/class/infiniband/mlx*/node_desc
 }
 
 

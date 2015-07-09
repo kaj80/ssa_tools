@@ -100,6 +100,10 @@ def test_acm_by_lid (acms, sample_lids, data):
 
     status = 0
 
+    print '==================================================================='
+    print '======================= TEST ACM BY LID ==========================='
+    print '==================================================================='
+
     for node in acms:
 
         if node == '':
@@ -120,6 +124,10 @@ def test_acm_by_lid (acms, sample_lids, data):
         print 'After LID test\n', out0
 
     print 'Run on %d nodes, each to %d lids' % (len(acms), len(sample_lids))
+
+    print '==================================================================='
+    print '========= TEST ACM BY LID COMPLETE (status: %d) ===================' % (status)
+    print '==================================================================='
 
     return status
 
@@ -155,6 +163,10 @@ def test_acm_by_gid (acms, sample_gids, data):
 
     status = 0
 
+    print '==================================================================='
+    print '======================= TEST ACM BY GID ==========================='
+    print '==================================================================='
+
     for node in acms:
 
         if node == '':
@@ -176,6 +188,11 @@ def test_acm_by_gid (acms, sample_gids, data):
         print 'After GID test\n', out0
 
     print 'Run on %d nodes, each to %d gids' % (len(acms), len(sample_gids))
+
+    print '==================================================================='
+    print '========= TEST ACM BY GID COMPLETE (status: %d) ===================' % (status)
+    print '==================================================================='
+
     return status
 
 
@@ -193,6 +210,10 @@ def sanity_test_0 (cores, als, acms, lids, gids, data):
             print "/usr/sbin/saquery --src-to-dst %s:%s|grep dgid\n%s" % ( slid, osmlid, osmgid)
             print "hostname\n%s" % hostname
             sys.exit(1)
+
+    print '==================================================================='
+    print '========================= SANITY TEST 0 ==========================='
+    print '==================================================================='
 
     # Initial ib_acme query in order to make sure there was PRDB update
     for node in acms:
@@ -217,6 +238,10 @@ def sanity_test_0 (cores, als, acms, lids, gids, data):
     status = test_acm_by_lid(acms, sample_lids, data)
     if status != 0:
         return status
+
+    print '==================================================================='
+    print '==================== SANITY TEST 0 COMPLETE ======================='
+    print '==================================================================='
 
     return status
 
@@ -285,10 +310,14 @@ def sanity_test_1 (cores, als, acms, data):
     access_svc  = als[0]
     acm_svc     = acms[0]
 
+    print '==================================================================='
+    print '========================= SANITY TEST 1 ==========================='
+    print '==================================================================='
+
     for acm in acms:
         if acm == acm_svc:
             continue
-        
+
         status = test_acm_by_lid_query(acm, data[acm][LID], data[acm_svc][LID])
         if status != 0:
             return status
@@ -338,6 +367,10 @@ def sanity_test_1 (cores, als, acms, data):
 
     start_services(core_master, access_svc, acm_svc)
     status = not status
+
+    print '==================================================================='
+    print '==================== SANITY TEST 1 COMPLETE ======================='
+    print '==================================================================='
 
     return status
 

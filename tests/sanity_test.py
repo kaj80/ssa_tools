@@ -126,7 +126,7 @@ def test_acm_by_lid (acms, sample_lids, data):
     print 'Run on %d nodes, each to %d lids' % (len(acms), len(sample_lids))
 
     print '==================================================================='
-    print '========= TEST ACM BY LID COMPLETE (status: %d) ===================' % (status)
+    print '========= TEST ACM BY LID COMPLETE (status: %d) ====================' % (status)
     print '==================================================================='
 
     return status
@@ -190,7 +190,7 @@ def test_acm_by_gid (acms, sample_gids, data):
     print 'Run on %d nodes, each to %d gids' % (len(acms), len(sample_gids))
 
     print '==================================================================='
-    print '========= TEST ACM BY GID COMPLETE (status: %d) ===================' % (status)
+    print '========== TEST ACM BY GID COMPLETE (status: %d) ===================' % (status)
     print '==================================================================='
 
     return status

@@ -102,6 +102,7 @@ CFG_FILES = {'opensm_cfg': '/usr/local/etc/rdma/opensm.conf',
 
 
 devide_list_chunks = lambda x, n, acc=[]: devide_list_chunks(x[n:], n, acc+[(x[:n])]) if x else acc
+conn_dict = {}
 
 def _ssa_action(host, action, typ):
     if host == '':
@@ -184,6 +185,7 @@ def run_iperf(hosts):
 
 
 def execute_on_remote(cmds, host):
+    global conn_dict
 
     if host == commands.getoutput('hostname'):
         if type(cmds) == list:
@@ -197,7 +199,11 @@ def execute_on_remote(cmds, host):
     status	= 0
     output	= ''
 
-    c		= run_on_remote(host)
+    if conn_dict.has_key(host):
+        c = conn_dict[host]
+    else:
+	c = run_on_remote(host)
+        conn_dict[host] = c
 
     if type(cmds) == list:
         for cmd in cmds:
@@ -209,9 +215,14 @@ def execute_on_remote(cmds, host):
         status = c.status
         output = c.output
 
-    c.close()
+    #c.close()
     return (status, output)
 
+def execute_on_remote_cleanup():
+    global conn_dict
+
+    for c in conn_dict.values():
+        c.close()
 
 def rm_exec(cmd, hosts):
     if type(hosts) != list:

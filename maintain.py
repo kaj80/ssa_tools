@@ -77,7 +77,6 @@ def check_setup(global_dict):
 
                 (a,b) = ssa_tools_utils.execute_on_remote("/usr/sbin/ibstat|egrep -a5 \"Act|Initializing\"|grep Base| awk '{print $NF}';/usr/sbin/ibaddr|awk '{print $2}';ibssa -v;ibacm -v", node)
 
-
     print "*************  check_setup ********************"
     print "node: [ssa_type, status, lid, gid, version]"
     sum = {}
@@ -167,6 +166,7 @@ def run_cmd(global_dict, cmd):
                 (rc, out) = ssa_tools_utils.execute_on_remote(cmd, node)
                 if int(rc) != 0:
                     status = 1
+
     return status
 
 
@@ -218,6 +218,8 @@ def main(argv):
 
     if options.cmd:
         status = status + run_cmd(ssa_global_dict, options.cmd)
+
+    ssa_tools_utils.execute_on_remote_cleanup()
 
     return status
 

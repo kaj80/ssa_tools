@@ -422,6 +422,9 @@ def main (argv):
         if status == 0:
             status = sanity_test_1(cores, als, acms, fabric_data)
 
+    # close all cached connections
+    ssa_tools_utils.execute_on_remote_cleanup()
+
     if status == 0:
         print 'PASSED %s' % __file__
     else:

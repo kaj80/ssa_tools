@@ -65,8 +65,8 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     if initial_query == 1:
         print 'Executing initial ib_acme query on %s (lid %s) node' % (node, slid)
-        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node)
-        time.sleep(5)
+        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c' % (ib_acme, dlid, slid), node)
+        time.sleep(10)
 
     print '%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node
     (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
@@ -137,8 +137,8 @@ def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
 
     if initial_query == 1:
         print 'Executing initial ib_acme query on %s (gid %s) node' % (node, sgid)
-        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, dgid, sgid), node)
-        time.sleep(5)
+        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c' % (ib_acme, dgid, sgid), node)
+        time.sleep(10)
 
     print '%s#  %s -f g -d %s -s %s -c -v' % (node, ib_acme, dgid, sgid)
     (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)

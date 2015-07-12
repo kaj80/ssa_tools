@@ -15,6 +15,8 @@ done
 
 install_type=$(get_node_label)
 
+sudo $WORKSPACE/ssa_tools/jenkins/openmpi_uninstall.sh /usr/local
+
 export extra_conf="--enable-openib-rdmacm-ibaddr --enable-mpirun-prefix-by-default --disable-openib-connectx-xrc --with-verbs=/usr/local"
 
 if [ $install_type == "UPSTR" ]; then

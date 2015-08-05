@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CFLAGS=${CFLAGS-"-g -O0 -rdynamic -DSSA_ADMIN_DEBUG"}
+CFLAGS=${CFLAGS-"-g -O0 -rdynamic"}
 
 . $(dirname $0)/common.sh
 

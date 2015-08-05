@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CFLAGS=${CFLAGS-"-g -O0 -rdynamic"}
+
 . $(dirname $0)/common.sh
 
 status=0
@@ -44,7 +46,7 @@ echo "--symbolic" > $COVCCFG
 sudo rm -f $COVFILE
 covselect -i $WORKSPACE/ssa_tools/jenkins/ssa_cov_exclude
 cov01 -1
-./autogen.sh && ./configure CFLAGS="-g -O0 -rdynamic" $OPTFLAGS && make clean && make -j && sudo -E make install
+./autogen.sh && ./configure CFLAGS="$CFLAGS" $OPTFLAGS && make clean && make -j && sudo -E make install
 rc=$?
 
 cov01 -0

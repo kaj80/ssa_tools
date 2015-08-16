@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CFLAGS=${CFLAGS-"-g -O0 -rdynamic"}
+CFLAGS=${CFLAGS-"-g -O0 -rdynamic -DREMOTE_FLAGS_MASK=0xE0"}
 
 . $(dirname $0)/common.sh
 

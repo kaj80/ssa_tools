@@ -57,7 +57,7 @@ if [[ $rc != 0 ]]; then
 fi
 
 # Installing configuration files
-conf_dir=/usr/local/etc/rdma
+conf_dir=/tmp
 sudo rm -rf $conf_dir
 sudo mkdir -p $conf_dir
 sudo cp $src_dir/plugin/ibssa_core_opts.cfg	$conf_dir/

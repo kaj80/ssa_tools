@@ -10,6 +10,12 @@ LOCAL_PORT_NUM=0
 SWITCH_GID_FOR_RESET=""
 let SWITCH_PORT_FOR_RESET=0
 LOCAL_GID=""
+DISTRIB_GID=""
+DISTRIB_LID=""
+ACCESS_GID=""
+ACCESS_LID=""
+ACM_GID=""
+ACM_LID=""
 
 function get_rtrn()
 {
@@ -104,9 +110,9 @@ find_down_node ()
 		exit
 	fi
 
-	local down_node_type=`sudo $SSADMIN  -g $down_node_gid  --format=short nodeinfo`
-	if [[ -z $down_node_gid ]]; then
-		echo "ERROR - can't access node "$$down_node_gid
+	local down_node_type=`sudo $SSADMIN  -t -1 -g $down_node_gid  --format=short nodeinfo`
+	if [[ -z $down_node_type ]]; then
+		echo "ERROR - can't access node "$down_node_type
 		exit
 	fi
 
@@ -125,17 +131,106 @@ find_down_node ()
 
 find_ssa_nodes ()
 {
-	local result=`find_down_node $LOCAL_GID`
+	DISTRIB_GID=""
+	DISTRIB_LID=""
+	ACCESS_GID=""
+	ACCESS_LID=""
+	ACM_GID=""
+	ACM_LID=""
+
+	local lid
+	local gid
+	local t
+	local result
+
+	let lid=0
+	let ACM_LID=0
+	let ACCESS_LID=0
+	let DISTRIB_LID=0
+
+	result=`find_down_node $LOCAL_GID`
+	echo $result
 
 	if [[ -z $result ]]; then
-		echo "ERROR - core node don't have any downstream connection"
+		echo "ERROR - a node don't have any downstream connection "$LOCAL_GID
 	fi
 
-	local lid=`get_rtrn $result 1`
-	local gid=`get_rtrn $result 2`
-	local t=`get_rtrn $result 3`
+	let lid=`get_rtrn $result 1`
+	gid=`get_rtrn $result 2`
+	t=`get_rtrn $result 3`
 
-	echo $lid,$gid,$t 
+	if [[ $t == "Core" ]]; then
+		echo "ERROR - Core has a core node as downstream connection"
+		exit
+	fi
+
+	if [[ $t == "Distrib" ]]; then
+		DISTRIB_GID=$gid
+		let DISTRIB_LID=$lid
+	fi
+
+	if [[ $t == "Access" ]]; then
+		ACCESS_GID=$gid
+		let ACCESS_LID=$lid
+	fi
+
+	if [[ $t == "ACM" ]]; then
+		ACM_GID=$gid
+		let ACM_LID=$lid
+
+		return
+	fi
+
+	result=`find_down_node $gid`
+	echo $result
+
+	if [[ -z $result ]]; then
+		return
+	fi
+
+	let lid=`get_rtrn $result 1`
+	gid=`get_rtrn $result 2`
+	t=`get_rtrn $result 3`
+
+	if [ $t == "Distrib" ] || [ $t == "Distrib" ]; then
+		echo "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
+		exit
+	fi
+
+	if [[ $t == "Access" ]]; then
+		ACCESS_GID=$gid
+		let ACCESS_LID=$lid
+	fi
+
+	if [[ $t == "ACM" ]]; then
+		ACM_GID=$gid
+		let ACM_LID=$lid
+
+		return
+	fi
+
+	result=`find_down_node $gid`
+	echo $result
+
+	if [[ -z $result ]]; then
+		return
+	fi
+
+	let lid=`get_rtrn $result 1`
+	gid=`get_rtrn $result 2`
+	t=`get_rtrn $result 3`
+
+	if [ $t == "Distrib" ] || [ $t == "Distrib" ] || [ $t == "Access" ]; then
+		echo "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
+		exit
+	fi
+
+	if [[ $t == "ACM" ]]; then
+		ACM_GID=$gid
+		let ACM_LID=$lid
+
+		return
+	fi
 }
 
 echo $OPENSM
@@ -152,3 +247,8 @@ echo $LOCAL_GID
 find_port_for_reset
 generate_pr_update
 find_ssa_nodes
+
+echo "Distrib "$DISTRIB_GID" "$DISTRIB_LID
+echo "Access "$ACCESS_GID" "$ACCESS_LID
+echo "ACM "$ACM_GID" "$ACM_LID
+

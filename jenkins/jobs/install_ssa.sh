@@ -77,9 +77,14 @@ sudo sed -i "s/event_plugin_name (null)/event_plugin_name opensmssa/g" $conf_dir
 
 sudo sed -i "s/^log_level 1/log_level 7/g" $conf_dir/ibssa_core_opts.cfg
 sudo sed -i "s/^distrib_tree_level 0/distrib_tree_level 15/g" $conf_dir/ibssa_core_opts.cfg
+sudo sed -i "s/^addr_preload 0/addr_preload 1/g" $conf_dir/ibssa_core_opts.cfg
+sudo sed -i "s:^# addr_data_file /etc/rdma/ibssa_hosts.data:addr_data_file /etc/rdma/ibssa_hosts.data:g" $conf_dir/ibssa_core_opts.cfg
 sudo sed -i "s/^log_level 1/log_level 7/g" $conf_dir/DL_ibssa_opts.cfg
 sudo sed -i "s/^log_level 1/log_level 7/g" $conf_dir/AL_ibssa_opts.cfg
 sudo sed -i "s/^log_level 1/log_level 7/g" $conf_dir/ibacm_opts.cfg
+sudo sed -i "s/^neigh_mode 0/neigh_mode 3/g" $conf_dir/ibacm_opts.cfg
+#sudo sed -i "s/^addr_preload none/addr_preload acm_hosts/g" $conf_dir/ibacm_opts.cfg
+#sudo sed -i "s:^# addr_data_file /etc/rdma/ibacm_hosts.data:addr_data_file /etc/rdma/ibacm_hosts.data:g $conf_dir/ibacm_opts.cfg
 
 sudo sed -i "s/^node_type access/node_type distrib/g" $conf_dir/DL_ibssa_opts.cfg
 

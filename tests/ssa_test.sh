@@ -39,8 +39,8 @@ get_local_port_number ()
 
 get_local_gid ()
 {
-	LOCAL_GID=`sudo ibaddr | cut -f2 -d" "`
-	if [[ -z $LOCAL_GID ]]; then
+	LOCAL_GID=`sudo ibaddr | cut -f2 -d" "`; rc=$?
+	if [ $rc != 0 ] || [ -z $LOCAL_GID ]; then
 		echo "ERROR - can't get local GID"
 		exit
 	fi
@@ -59,8 +59,8 @@ find_port_for_reset ()
 		exit
 	fi
 
-	let port_num=`sudo ibnetdiscover --Switch_list | grep "$SWITCH_GID_FOR_RESET" |cut -f5 -d" "`
-	if [[ 0 == $port_num ]]; then
+	let port_num=`sudo ibnetdiscover --Switch_list | grep "$SWITCH_GID_FOR_RESET" |cut -f5 -d" "`; rc=$?
+	if [ $rc != 0 ] || [ 0 == $port_num ]; then
 		echo "ERROR - can't find number of ports in switch "$SWITCH_GID_FOR_RESET
 		exit
 	fi
@@ -104,20 +104,20 @@ find_down_node ()
 		exit
 	fi
 
-	local let down_node_lid=`echo $down_connection | cut -f2 -d" "`
-	if [[ 0 == $down_node_lid ]]; then
+	local let down_node_lid=`echo $down_connection | cut -f2 -d" "`; rc=$?
+	if (( $rc != 0)) || [[ 0 == $down_node_lid ]]; then
 		echo "ERROR - there is no downstream connection"
 		exit
 	fi
 
-	local down_node_gid=`echo $down_connection | cut -f1 -d" "`
-	if [[ -z $down_node_gid ]]; then
+	local down_node_gid=`echo $down_connection | cut -f1 -d" "`; rc=$?
+	if (( $rc != 0)) || [[ -z $down_node_gid ]]; then
 		echo "ERROR - there is no downstream connection"
 		exit
 	fi
 
-	local down_node_type=`sudo $SSADMIN  -t -1 -g $down_node_gid  --format=short nodeinfo`
-	if [[ -z $down_node_type ]]; then
+	local down_node_type=`sudo $SSADMIN  -t -1 -g $down_node_gid  --format=short nodeinfo`; rc=$?
+	if (( $rc != 0 )) || [[ -z $down_node_type ]]; then
 		echo "ERROR - can't access node "$down_node_type
 		exit
 	fi
@@ -134,6 +134,34 @@ find_down_node ()
 
 	echo $down_node_lid,$down_node_gid,$down_node_type
 }
+
+get_epochs ()
+{
+	if [[ $# == 0 ]]; then
+		echo "ERROR - ${FUNCTION} called without input parameters"
+		exit
+	fi
+
+	if [[ -z $1 ]]; then
+		echo "ERROR - ${FUNCTION} the first parameter should be valid IB GID"
+		exit
+	fi
+
+	local epochs=`sudo $SSADMIN -g $1 stats DB_EPOCH IPV4_EPOCH IPV6_EPOCH NAME_EPOCH`; rc=$?
+
+	if (( $rc != 0 )) || [[ -z $epochs ]]; then
+		echo "ERROR - can't access node "$1
+		exit
+	fi
+
+	local let db_epoch=`echo "$epochs" | grep "DB_EPOCH" | cut -f2 -d" "`
+	local let ipv4_epoch=`echo "$epochs" | grep "IPV4_EPOCH"  | cut -f2 -d" "`
+	local let ipv6_epoch=`echo "$epochs" | grep "IPV6_EPOCH"  | cut -f2 -d" "`
+	local let name_epoch=`echo "$epochs" | grep "NAME_EPOCH" | cut -f2 -d" "`
+
+	echo $db_epoch,$ipv4_epoch,$ipv6_epoch,$name_epoch
+}
+
 
 find_ssa_nodes ()
 {
@@ -155,15 +183,21 @@ find_ssa_nodes ()
 	let DISTRIB_LID=0
 
 	result=`find_down_node $LOCAL_GID`
-	echo $result
 
 	if [[ -z $result ]]; then
-		echo "ERROR - a node don't have any downstream connection "$LOCAL_GID
+		echo "WARNING - a node don't have any downstream connection "$LOCAL_GID
+		return
 	fi
 
 	let lid=`get_rtrn $result 1`
 	gid=`get_rtrn $result 2`
 	t=`get_rtrn $result 3`
+
+	if [[ -z $t ]] || [[ -z $gid ]] || (( $lid < 0)); then
+		echo "ERROR - Wrong ssadmin output "$result
+		exit
+
+	fi
 
 	if [[ $t == "Core" ]]; then
 		echo "ERROR - Core has a core node as downstream connection"
@@ -188,9 +222,9 @@ find_ssa_nodes ()
 	fi
 
 	result=`find_down_node $gid`
-	echo $result
 
 	if [[ -z $result ]]; then
+		echo "WARNING - a node don't have any downstream connection "$gid
 		return
 	fi
 
@@ -198,7 +232,13 @@ find_ssa_nodes ()
 	gid=`get_rtrn $result 2`
 	t=`get_rtrn $result 3`
 
-	if [ $t == "Distrib" ] || [ $t == "Distrib" ]; then
+	if [[ -z $t ]] || [[ -z $gid ]] || (( $lid < 0)); then
+		echo "ERROR - Wrong ssadmin output "$result
+		exit
+
+	fi
+
+	if [[ $t == "Core" ]] || [[ $t == "Distrib" ]]; then
 		echo "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
 		exit
 	fi
@@ -216,9 +256,9 @@ find_ssa_nodes ()
 	fi
 
 	result=`find_down_node $gid`
-	echo $result
 
 	if [[ -z $result ]]; then
+		echo "WARNING - a node don't have any downstream connection "$gid
 		return
 	fi
 
@@ -226,7 +266,13 @@ find_ssa_nodes ()
 	gid=`get_rtrn $result 2`
 	t=`get_rtrn $result 3`
 
-	if [ $t == "Distrib" ] || [ $t == "Distrib" ] || [ $t == "Access" ]; then
+	if [[ -z $t ]] || [[ -z $gid ]] || (( $lid < 0)); then
+		echo "ERROR - Wrong ssadmin output "$result
+		exit
+
+	fi
+
+	if [[ $t == "Distrib" ]] || [[ $t == "Distrib" ]] || [[ $t == "Access" ]]; then
 		echo "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
 		exit
 	fi
@@ -239,16 +285,8 @@ find_ssa_nodes ()
 	fi
 }
 
-echo $OPENSM
-echo $OPENSM_CORE_CONF
-echo $OPENSM_NO_CORE_CONF
-echo $OPENSM_DEFAULT_PRIORITY
-echo $SSADMIN
-
 get_local_port_number
 get_local_gid
-echo $LOCAL_PORT_NUM
-echo $LOCAL_GID
 #start_core
 find_port_for_reset
 generate_pr_update
@@ -258,3 +296,15 @@ echo "Distrib "$DISTRIB_GID" "$DISTRIB_LID
 echo "Access "$ACCESS_GID" "$ACCESS_LID
 echo "ACM "$ACM_GID" "$ACM_LID
 
+get_epochs $LOCAL_GID
+if [[ ! -z $DISTRIB_GID ]];then
+	get_epochs $DISTRIB_GID
+fi
+
+if [[ ! -z $ACCESS_GID ]];then
+	get_epochs $ACCESS_GID
+fi
+
+if [[ ! -z $ACM_GID ]];then
+	get_epochs $ACM_GID
+fi

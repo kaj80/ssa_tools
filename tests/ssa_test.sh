@@ -98,13 +98,19 @@ find_down_node ()
 		exit
 	fi
 
-	local let down_node_lid=`sudo $SSADMIN -g $1 --format=down nodeinfo | head -1 | cut -f2 -d" "`
+	local down_connection=`sudo $SSADMIN -g $1 --format=down nodeinfo | head -1`
+	if [[ -z $down_connection ]]; then
+		echo "ERROR - there is no downstream connection"
+		exit
+	fi
+
+	local let down_node_lid=`echo $down_connection | cut -f2 -d" "`
 	if [[ 0 == $down_node_lid ]]; then
 		echo "ERROR - there is no downstream connection"
 		exit
 	fi
 
-	local down_node_gid=`sudo $SSADMIN  -g $1  --format=down nodeinfo | head -1 | cut -f1 -d" "`
+	local down_node_gid=`echo $down_connection | cut -f1 -d" "`
 	if [[ -z $down_node_gid ]]; then
 		echo "ERROR - there is no downstream connection"
 		exit

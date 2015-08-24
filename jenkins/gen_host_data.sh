@@ -1,14 +1,10 @@
 #!/bin/bash
 
-input_file="${input_file:-/tmp/jenkins/workspace/run_ssa/label/dev-r-vrt-030/nodes.list}"
+hostname_input_file="${hostname_input_file:-ssa.hosts}"
 
-hostname_file="${hostname_file:-/tmp/hostnames.list}"
+hostdata_output_file="${hostdata_output_file:-/etc/rdma/ibssa_hosts.data}"
 
-output_file="${output_file:-/etc/rdma/ibssa_hosts.data}"
-
-cat $input_file | awk '{print $1}' > $hostname_file
-
-echo ""  | tr -d '\n' > $output_file
+echo ""  | tr -d '\n' > $hostdata_output_file
 
 while read line; do
 
@@ -42,16 +38,16 @@ while read line; do
 	ibaddr | awk '\''{print $2}'\'' > $GID_file
 
 	( ( cat /tmp/ip ; echo -e '\''\t\t'\'' ; cat /tmp/GID ; echo -e  '\''\t'\'' ; cat /tmp/QP ; echo -e '\''\t'\'' ; cat /tmp/flags ) | tr -d '\''\n'\''  ; echo '\'''\'' ; )
-	' >> $output_file
+	' >> $hostdata_output_file
 
-done < $hostname_file
+done < $hostname_input_file
 
 
 
 while read line; do
 
-	scp $output_file root@$line:$output_file
+	scp $hostdata_output_file root@$line:$hostdata_output_file
 
-done < $hostname_file
+done < $hostname_input_file
 
 exit 0

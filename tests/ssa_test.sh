@@ -1,9 +1,13 @@
 #!/bin/bash
 
+PROGNAME=$(basename $0)
 OPENSM=${OPENSM:-"/sashakot/usr/sbin/opensm"}
 SSADMIN=${SSADMIN:-"/sashakot/usr/sbin/ssadmin"}
 OPENSM_CORE_CONF=${OPENSM_CORE_CONF:-"/sashakot/opensm.conf"}
-OPENSM_NO_CORE_CONF=${OPENSM_NO_CORE_CONF:-""}
+OPENSM_NO_CORE_CONF=${OPENSM_NO_CORE_CONF:-""}a
+RDMA_CONF_DIR=${RDMA_CONF_DIR:="/sashakot/usr/etc/rdma/"}
+CORE_CONF=${CORE_CONF:-"$RDMA_CONF_DIR/ibssa_core_opts.cfg"}
+ADDR_DATA_FILE=${ADDR_DATA_FILE:-"$RDMA_CONF_DIR/ibssa_hosts.data"}
 OPENSM_DEFAULT_PRIORITY=7
 CORE_LOG=${CORE_LOG:-"/var/log/ibssa.log"}
 LOCAL_PORT_NUM=0
@@ -17,8 +21,18 @@ ACCESS_LID=""
 ACM_GID=""
 ACM_LID=""
 
+
+function error_exit
+{
+	echo "$PROGRAME: ${1:-"Unknow Error"}" 1>&2
+}
+
+
 function get_rtrn()
 {
+	if (( $# < 2 )); then
+		error_exit "ERROR - ${FUNCTION} wrong number of parameters"
+	fi
 	echo `echo $1 | cut --delimiter=, -f $2`
 }
 
@@ -40,9 +54,8 @@ get_local_port_number ()
 get_local_gid ()
 {
 	LOCAL_GID=`sudo ibaddr | cut -f2 -d" "`; rc=$?
-	if [ $rc != 0 ] || [ -z $LOCAL_GID ]; then
-		echo "ERROR - can't get local GID"
-		exit
+	if (( $rc != 0 )) || [[ -z $LOCAL_GID ]]; then
+		error_exit "ERROR - can't get local GID"
 	fi
 }
 
@@ -55,14 +68,12 @@ find_port_for_reset ()
 {
 	SWITCH_GID_FOR_RESET=`sudo ibnetdiscover --Switch_list | head -1 | cut -f3 -d" "`
 	if [[ -z $SWITCH_GID_FOR_RESET ]]; then
-		echo "ERROR - switch is not found"
-		exit
+		error_exit "ERROR - switch is not found"
 	fi
 
 	let port_num=`sudo ibnetdiscover --Switch_list | grep "$SWITCH_GID_FOR_RESET" |cut -f5 -d" "`; rc=$?
-	if [ $rc != 0 ] || [ 0 == $port_num ]; then
-		echo "ERROR - can't find number of ports in switch "$SWITCH_GID_FOR_RESET
-		exit
+	if (( $rc != 0 )) || [ 0 == $port_num ]; then
+		error_exit "ERROR - can't find number of ports in switch "$SWITCH_GID_FOR_RESET
 	fi
 
 	for i in `seq 1 $port_num`; do
@@ -73,8 +84,7 @@ find_port_for_reset ()
 	done
 
 	if [[ 0 == $SWITCH_PORT_FOR_RESET ]]; then
-		echo "ERROR - port for reset is not found"
-		exit;
+		error_exit "ERROR - port for reset is not found"
 	fi
 
 	echo $SWITCH_PORT_FOR_RESET
@@ -86,40 +96,40 @@ generate_pr_update ()
 	ibportstate --Guid $SWITCH_GID_FOR_RESET $SWITCH_PORT_FOR_RESET reset >> /dev/null
 }
 
+generate_ip_update ()
+{
+	touch $ADDR_DATA_FILE
+	sudo pkill -HUP opensm
+}
+
 find_down_node ()
 {
 	if [[ $# == 0 ]]; then
-		echo "ERROR - ${FUNCTION} called without input parameters"
-		exit
+		error_exit "ERROR - ${FUNCTION} called without input parameters"
 	fi
 
 	if [[ -z $1 ]]; then
-		echo "ERROR - ${FUNCTION} the first parameter should be valid IB GID"
-		exit
+		error_exit "ERROR - ${FUNCTION} the first parameter should be valid IB GID"
 	fi
 
 	local down_connection=`sudo $SSADMIN -g $1 --format=down nodeinfo | head -1`
 	if [[ -z $down_connection ]]; then
-		echo "ERROR - there is no downstream connection"
-		exit
+		error_exit "ERROR - there is no downstream connection"
 	fi
 
 	local let down_node_lid=`echo $down_connection | cut -f2 -d" "`; rc=$?
 	if (( $rc != 0)) || [[ 0 == $down_node_lid ]]; then
-		echo "ERROR - there is no downstream connection"
-		exit
+		error_exit "ERROR - there is no downstream connection"
 	fi
 
 	local down_node_gid=`echo $down_connection | cut -f1 -d" "`; rc=$?
 	if (( $rc != 0)) || [[ -z $down_node_gid ]]; then
-		echo "ERROR - there is no downstream connection"
-		exit
+		error_exit "ERROR - there is no downstream connection"
 	fi
 
 	local down_node_type=`sudo $SSADMIN  -t -1 -g $down_node_gid  --format=short nodeinfo`; rc=$?
 	if (( $rc != 0 )) || [[ -z $down_node_type ]]; then
-		echo "ERROR - can't access node "$down_node_type
-		exit
+		error_exit "ERROR - can't access node "$down_node_type
 	fi
 
 	if echo $down_node_type | grep -q "Core"; then
@@ -138,20 +148,17 @@ find_down_node ()
 get_epochs ()
 {
 	if [[ $# == 0 ]]; then
-		echo "ERROR - ${FUNCTION} called without input parameters"
-		exit
+		error_exit "ERROR - ${FUNCTION} called without input parameters"
 	fi
 
 	if [[ -z $1 ]]; then
-		echo "ERROR - ${FUNCTION} the first parameter should be valid IB GID"
-		exit
+		error_exit "ERROR - ${FUNCTION} the first parameter should be valid IB GID"
 	fi
 
 	local epochs=`sudo $SSADMIN -g $1 stats DB_EPOCH IPV4_EPOCH IPV6_EPOCH NAME_EPOCH`; rc=$?
 
 	if (( $rc != 0 )) || [[ -z $epochs ]]; then
-		echo "ERROR - can't access node "$1
-		exit
+		error_exit "ERROR - can't access node "$1
 	fi
 
 	local let db_epoch=`echo "$epochs" | grep "DB_EPOCH" | cut -f2 -d" "`
@@ -194,14 +201,12 @@ find_ssa_nodes ()
 	t=`get_rtrn $result 3`
 
 	if [[ -z $t ]] || [[ -z $gid ]] || (( $lid < 0)); then
-		echo "ERROR - Wrong ssadmin output "$result
-		exit
+		error_exit "ERROR - Wrong ssadmin output "$result
 
 	fi
 
 	if [[ $t == "Core" ]]; then
-		echo "ERROR - Core has a core node as downstream connection"
-		exit
+		error_exit "ERROR - Core has a core node as downstream connection"
 	fi
 
 	if [[ $t == "Distrib" ]]; then
@@ -233,14 +238,12 @@ find_ssa_nodes ()
 	t=`get_rtrn $result 3`
 
 	if [[ -z $t ]] || [[ -z $gid ]] || (( $lid < 0)); then
-		echo "ERROR - Wrong ssadmin output "$result
-		exit
+		error_exit "ERROR - Wrong ssadmin output "$result
 
 	fi
 
 	if [[ $t == "Core" ]] || [[ $t == "Distrib" ]]; then
-		echo "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
-		exit
+		error_exit "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
 	fi
 
 	if [[ $t == "Access" ]]; then
@@ -267,14 +270,12 @@ find_ssa_nodes ()
 	t=`get_rtrn $result 3`
 
 	if [[ -z $t ]] || [[ -z $gid ]] || (( $lid < 0)); then
-		echo "ERROR - Wrong ssadmin output "$result
-		exit
+		error_exit "ERROR - Wrong ssadmin output "$result
 
 	fi
 
 	if [[ $t == "Distrib" ]] || [[ $t == "Distrib" ]] || [[ $t == "Access" ]]; then
-		echo "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
-		exit
+		error_exit "ERROR - Wrong type of downstream connection "$t" "$gid" "$lid
 	fi
 
 	if [[ $t == "ACM" ]]; then
@@ -290,6 +291,7 @@ get_local_gid
 #start_core
 find_port_for_reset
 generate_pr_update
+generate_ip_update 
 find_ssa_nodes
 
 echo "Distrib "$DISTRIB_GID" "$DISTRIB_LID

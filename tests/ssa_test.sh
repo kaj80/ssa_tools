@@ -199,7 +199,7 @@ function get_epochs
 	local let ipv6_epoch=`echo "$epochs" | grep "IPV6_EPOCH"  | cut -f2 -d" "`
 	local let name_epoch=`echo "$epochs" | grep "NAME_EPOCH" | cut -f2 -d" "`
 
-	echo $db_epoch,$ipv4_epoch,$ipv6_epoch,$name_epoch
+	echo $db_epoch" "$ipv4_epoch" "$ipv6_epoch" "$name_epoch
 
 	return 0
 }
@@ -342,10 +342,10 @@ function get_iner_nodes_epochs ()
 		echo "Access "$tmp
 	fi
 
-	if [[ ! -z $ACM_GID ]];then
-		tmp=`get_epochs $ACM_GID`
-		echo "ACM "$tmp
-	fi
+#	if [[ ! -z $ACM_GID ]];then
+#		tmp=`get_epochs $ACM_GID`
+#		echo "ACM "$tmp
+#	fi
 }
 
 function print_ssa_nodes ()
@@ -374,6 +374,7 @@ fi
 find_port_for_reset
 find_ssa_nodes
 print_ssa_nodes
+get_iner_nodes_epochs
 
 generate_pr_update
 generate_ip_update

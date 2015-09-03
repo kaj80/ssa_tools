@@ -59,6 +59,17 @@ def get_data (topology):
     return data
 
 
+def compare_outs (out0, out1, ,index)
+
+	try:
+		if out1.split()[-4].split(',')[index] == out0.split()[-4].split(',')[index]:
+			return "Equal"
+	except:
+		return "Exception"
+
+	return "Unequal"
+
+
 def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     status = 0
@@ -81,14 +92,15 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    try:
-        if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
-            if print_err == 1:
-                print 'ERROR. %s PR was not taken from cache' % node
-                (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
-                print o
-            status = 2
-    except:
+
+    ret = compare_outs(out0, out1, -1)
+    if ret == "Equal":
+        if print_err == 1:
+            print 'ERROR. %s PR was not taken from cache' % node
+            (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+            print o
+        status = 2
+    elif ret == "Exception":
         print 'ERROR. %s failed' % node
         (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
         print o
@@ -151,7 +163,8 @@ def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
+    ret = compare_outs(out0, out1, -1)
+    if ret == "Equal":
         if print_err == 1:
             print 'error. %s pr was not taken from cache' % node
         status = 2

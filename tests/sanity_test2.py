@@ -59,6 +59,27 @@ def get_data (topology):
     return data
 
 
+def get_ip_data ():
+    #takes ip data from the file used for data preloading
+    file_location = '/etc/rdma'
+    file_name = 'ssa_hosts.data'
+    ip_data_str = commands.getoutput('cat %s/%s | awk %s' % (file_location,file_name,'{print $1}'))
+    
+    return ip_data_str.split()
+
+
+def compare_outs (out0, out1, ,index):
+
+	try:
+		if out1.split()[-4].split(',')[index] == out0.split()[-4].split(',')[index]:
+			return "Equal"
+	except:
+		return "Exception"
+
+	return "Unequal"
+
+
+
 def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     status = 0
@@ -81,14 +102,15 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    try:
-        if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
-            if print_err == 1:
-                print 'ERROR. %s PR was not taken from cache' % node
-                (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
-                print o
-            status = 2
-    except:
+
+    ret = compare_outs(out0, out1, -1)
+    if ret == "Equal":
+        if print_err == 1:
+            print 'ERROR. %s PR was not taken from cache' % node
+            (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+            print o
+        status = 2
+    elif ret == "Exception":
         print 'ERROR. %s failed' % node
         (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
         print o
@@ -151,7 +173,8 @@ def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
+    ret = compare_outs(out0, out1, -1)
+    if ret == "Equal":
         if print_err == 1:
             print 'error. %s pr was not taken from cache' % node
         status = 2
@@ -196,7 +219,76 @@ def test_acm_by_gid (acms, sample_gids, data):
     return status
 
 
-def sanity_test_0 (cores, als, acms, lids, gids, data):
+def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
+
+    status = 0
+
+    if initial_query == 1:
+        print 'Executing initial ib_acme query on %s (ip %s) node' % (node, sip)
+        (rc, out) = ssa_tools_utils.execute+on_remote('%s -f i -d %s -s %s -c' % (ib_acme, sip, dip), node)
+        time.sleep(10)
+
+    print '%s -f i -d %s -s %s -c -v' % (ib_acme, dip, sip), node
+    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' %ib_acme, node)
+    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f i -d %s -s %s -c -v' % (ib_acme, dip, sip), node)
+    #print_out
+
+    if out.find('failed') >= 0 and out.find('success') < 0:
+        if print_err == 1:
+            print 'ERROR. ACM on %s failed' % node
+        status = 1
+
+    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P' % ib_acme, node)
+
+    ret = compare_outs(out0, out1, -3) #FIXME!!
+    if ret == "Equal":
+        if print_err == 1:
+             print 'error. %s pr was not taken from cache' % node
+        status = 2
+
+    return status
+         
+
+def test_acm_by_ip (acms, sample_ips, data):
+
+    status = 0
+
+    print '==================================================================='
+    print '======================= TEST ACM BY IP ==========================='
+    print '==================================================================='
+
+    for node in acms:
+
+        if node == '':
+            continue
+
+        (_, sip)   = ssa_tools_utils.execute_on_remote("cat /tmp/ip", node)
+        #the /tmp/ip file is created by the gen_host_data.sh script
+
+        print 'Testing %s with %d IPs' % (node, len(sample_ips))
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'Before IP test\n', out0
+
+        for ip in sample_ips:
+
+            status = test_acm_by_ip_query(node, sip, ip)
+            if status != 0:
+                break
+
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'After IP test\n', out0
+
+    print 'Run on %d nodes, each to %d ips' % (len(acms), len(sample_ips))
+
+    print '==================================================================='
+    print '========== TEST ACM BY IP COMPLETE (status: %d) ===================' % (status)
+    print '==================================================================='
+
+    return status
+
+
+
+def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
 
     hostname    = commands.getoutput('hostname')
     slid        = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'").rstrip('\n')
@@ -210,6 +302,7 @@ def sanity_test_0 (cores, als, acms, lids, gids, data):
             print "/usr/sbin/saquery --src-to-dst %s:%s|grep dgid\n%s" % ( slid, osmlid, osmgid)
             print "hostname\n%s" % hostname
             sys.exit(1)
+	#FIXME??
 
     print '==================================================================='
     print '========================= SANITY TEST 0 ==========================='
@@ -225,17 +318,23 @@ def sanity_test_0 (cores, als, acms, lids, gids, data):
 
         (_, _)      = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, osmgid, sgid), node)
         (_, _)      = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, osmlid, slid), node)
+	#FIXME??
         time.sleep(10)
 
 
     sample_gids = random.sample(gids, min(len(gids), sample_size))
     sample_lids = random.sample(lids, min(len(lids), sample_size))
+    sample_ips = random.sample(ips, min(len(ips), sample_size))
 
     status = test_acm_by_gid(acms, sample_gids, data)
     if status != 0:
         return status
 
     status = test_acm_by_lid(acms, sample_lids, data)
+    if status != 0:
+        return status
+
+    status = test_acm_by_ip(acms, sample_ips, data)
     if status != 0:
         return status
 
@@ -388,12 +487,15 @@ def main (argv):
     #
     fabric_data = get_data(opts.topology)
 
+    ip_data = get_ip_data()
+
     cores   = []
     als     = []
     acms    = []
 
     lids    = []
     gids    = []
+    ips     = []
 
     status  = 0
 
@@ -415,10 +517,13 @@ def main (argv):
         except:
             pass
 
+    for ip in ip_data
+            ips.append(ip)
+
     if len(cores) != 2 or len(als) != 2 or len(acms) < 2:
         status = 1
     else:
-        status = sanity_test_0(cores, als, acms, lids, gids, fabric_data)
+        status = sanity_test_0(cores, als, acms, lids, gids, ips, fabric_data)
         if status == 0:
             status = sanity_test_1(cores, als, acms, fabric_data)
 

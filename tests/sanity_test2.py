@@ -62,13 +62,14 @@ def get_data (topology):
 def get_ip_data ():
     #takes ip data from the file used for data preloading
     file_location = '/etc/rdma'
-    file_name = 'ssa_hosts.data'
-    ip_data_str = commands.getoutput('cat %s/%s | awk %s' % (file_location,file_name,'{print $1}'))
-    
-    return ip_data_str.split()
+    file_name = 'ibssa_hosts.data'
+    ip_data_str = commands.getoutput("cat %s/%s | awk '{print $1}'" % (file_location,file_name))
+    ip_data=ip_data_str.split()
+    print ip_data #FIXME!!
+    return ip_data
 
 
-def compare_outs (out0, out1, ,index):
+def compare_outs (out0, out1, index):
 
 	try:
 		if out1.split()[-4].split(',')[index] == out0.split()[-4].split(',')[index]:
@@ -225,7 +226,7 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
 
     if initial_query == 1:
         print 'Executing initial ib_acme query on %s (ip %s) node' % (node, sip)
-        (rc, out) = ssa_tools_utils.execute+on_remote('%s -f i -d %s -s %s -c' % (ib_acme, sip, dip), node)
+        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f i -d %s -s %s -c' % (ib_acme, dip, sip), node)
         time.sleep(10)
 
     print '%s -f i -d %s -s %s -c -v' % (ib_acme, dip, sip), node
@@ -517,7 +518,7 @@ def main (argv):
         except:
             pass
 
-    for ip in ip_data
+    for ip in ip_data:
             ips.append(ip)
 
     if len(cores) != 2 or len(als) != 2 or len(acms) < 2:

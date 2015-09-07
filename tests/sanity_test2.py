@@ -64,9 +64,7 @@ def get_ip_data ():
     file_location = '/etc/rdma'
     file_name = 'ibssa_hosts.data'
     ip_data_str = commands.getoutput("cat %s/%s | awk '{print $1}'" % (file_location,file_name))
-    ip_data=ip_data_str.split()
-    print ip_data #FIXME!!
-    return ip_data
+    return ip_data_str.split()
 
 
 def compare_outs (out0, out1, index):
@@ -104,26 +102,14 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
 
-#    ret = compare_outs(out0, out1, -1)
-#    if ret == "Equal":
-#        if print_err == 1:
-#            print 'ERROR. %s PR was not taken from cache' % node
-#            (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
-#            print o
-#        status = 2
-#    elif ret == "Exception":
-#        print 'ERROR. %s failed' % node
-#        (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
-#        print o
-#        status = 3
-    try:
-        if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
-            if print_err == 1:
-                print 'ERROR. %s PR was not taken from cache' % node
-                (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
-                print o
-            status = 2
-    except:
+    ret = compare_outs(out0, out1, -1)
+    if ret == "Equal":
+        if print_err == 1:
+            print 'ERROR. %s PR was not taken from cache' % node
+            (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
+            print o
+        status = 2
+    elif ret == "Exception":
         print 'ERROR. %s failed' % node
         (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
         print o
@@ -186,12 +172,8 @@ def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-#    ret = compare_outs(out0, out1, -1)
-#    if ret == "Equal":
-#        if print_err == 1:
-#            print 'error. %s pr was not taken from cache' % node
-#        status = 2
-    if out1.split()[-4].split(',')[-1] == out0.split()[-4].split(',')[-1]:
+    ret = compare_outs(out0, out1, -1)
+    if ret == "Equal":
         if print_err == 1:
             print 'error. %s pr was not taken from cache' % node
         status = 2
@@ -257,7 +239,7 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P' % ib_acme, node)
 
-    ret = compare_outs(out0, out1, -3) #FIXME!!
+    ret = compare_outs(out0, out1, -3)
     if ret == "Equal":
         if print_err == 1:
              print 'error. %s pr was not taken from cache' % node
@@ -319,7 +301,6 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
             print "/usr/sbin/saquery --src-to-dst %s:%s|grep dgid\n%s" % ( slid, osmlid, osmgid)
             print "hostname\n%s" % hostname
             sys.exit(1)
-	#FIXME??
 
     print '==================================================================='
     print '========================= SANITY TEST 0 ==========================='
@@ -335,7 +316,6 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
 
         (_, _)      = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, osmgid, sgid), node)
         (_, _)      = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, osmlid, slid), node)
-	#FIXME??
         time.sleep(10)
 
 

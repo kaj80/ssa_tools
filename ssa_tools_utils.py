@@ -194,7 +194,7 @@ def execute_on_remote(cmds, host):
         else:
             return(0, commands.getoutput(cmds))
 
-    print 'Executing on %s' % host
+    #print 'Executing on %s' % host
 
     status	= 0
     output	= ''

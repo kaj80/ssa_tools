@@ -172,8 +172,8 @@ class la_config :
 				},
 			    'distrib_receive' :
 				{
-				  'start' : '', # TBD
-				  'end' : '' # TBD
+				  'start' : '(?P<start_time>.*) \[(?P<event_thread_id>.*)\]: ssa_upstream_update_conn: SSA_DB_FIELD_DEFS ssa_db allocated pp_field_tables .*',
+				  'end' : '(?P<end_time>.*) \[(?P<event_thread_id>.*)\]: ssa_upstream_update_conn: ssa_db .* complete'
 				},
 			    'distrib_send' :
 				{
@@ -182,8 +182,8 @@ class la_config :
 				},
 			    'access_receive' :
 				{
-				  'start' : '', # TBD
-				  'end' : '' # TBD
+				  'start' : '(?P<start_time>.*) \[(?P<event_thread_id>.*)\]: ssa_upstream_update_conn: SSA_DB_FIELD_DEFS ssa_db allocated pp_field_tables .*',
+				  'end' : '(?P<end_time>.*) \[(?P<event_thread_id>.*)\]: ssa_upstream_update_conn: ssa_db .* complete'
 				},
 			    'access_client_join' :
 				{

@@ -20,8 +20,8 @@
 # Options (default values)                                                    #
 ###############################################################################
 output_mode	= 'regular' # optional values: 'regular' / 'csv'
-input_dir	= '/.autodirect/mtrswgwork/lennyb/work/UFM/SSA/logs/20141201_131223_sm_change'
-output_dir	= '/tmp/loganalyzer_out'
+input_dir	= ''
+output_dir	= '/tmp/la_out'
 analysis_list	= []
 node_type_list	= []
 host_list	= []
@@ -31,21 +31,21 @@ time_units	= 'us'	# optional values: 'us' / 'ms' / 's' / 'm'
 ###############################################################################
 # Constants                                                                   #
 ###############################################################################
-LA_NODE_TYPES		= [ 'osm', 'distrib', 'access', 'acm' ]
+LA_NODE_TYPES		= [ 'core', 'distrib', 'access', 'acm' ]
 
 LA_ANALYSIS_TYPES	= [ 'node_info', 'thread_info', 'node_events', 'distrib_tree', 'ssa_events' ]
 
-LA_LOGS_BY_TYPE		= { 'osm' : 'ibssa.log', 'distrib' : 'ibssa.log',
+LA_LOGS_BY_TYPE		= { 'core' : 'ibssa.log', 'distrib' : 'ibssa.log',
 			    'access' : 'ibssa.log', 'acm' : 'ibacm.log' }
 
-LA_THREADS_BY_NODE	= { 'osm' : ['core', 'ctrl', 'extract', 'upstream', 'downstream'],
+LA_THREADS_BY_NODE	= { 'core' : ['core', 'ctrl', 'extract', 'upstream', 'downstream'],
 			    'distrib' : ['distrib', 'ctrl', 'upstream', 'downstream'],
 			    'access' : ['access', 'access_prdb', 'ctrl', 'upstream', 'downstream'],
 			    'acm' : ['acm_server', 'ctrl', 'acm_comp', 'acm_query', 'acm_retry', 'upstream'],
 			    'core_access' : ['core', 'ctrl', 'extract', 'access', 'access_prdb', 'upstream', 'downstream'],
 			    'distrib_access' : ['distrib', 'ctrl', 'access', 'access_prdb', 'upstream', 'downstream'] }
 
-LA_EVENTS_BY_NODE	= { 'osm' : ['core_subnet_up', 'core_extract', 'core_comparison', 'core_send', 'core_tree_join', 'core_tree_leave' ],
+LA_EVENTS_BY_NODE	= { 'core' : ['core_subnet_up', 'core_extract', 'core_comparison', 'core_send', 'core_tree_join', 'core_tree_leave' ],
 			    'distrib' : ['distrib_receive', 'distrib_send' ],
 			    'access' : ['access_receive', 'access_client_join', 'access_prdb_calc', 'access_prdb_send' ],
 			    'acm' : ['acm_receive', 'acm_populate', 'acm_pr_resolve'] }
@@ -221,7 +221,7 @@ class la_config :
 			    'ssa_smdb_update' :
 				{
 				  'start' : '(?P<start_time>.*) \[(?P<event_thread_id>.*)\]: core_report: Subnet up event',
-				  'start_node' : 'osm',
+				  'start_node' : 'core',
 				  'start_id' : '',
 				  'end' : '',
 				  'end_node' : 'access',

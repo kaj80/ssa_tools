@@ -279,7 +279,7 @@ def validate_options(opts, args):
 
 	if len(args) == 1 :
 		if not os.path.exists(args[0]) :
-			print '-E- Input directory specified doesn\'t exist.'
+			print '-E- Input directory specified (' + args[0] + ') doesn\'t exist.'
 			return 1
 	elif len(args) > 1 :
 		print '-E- Too much arguments specified'
@@ -324,6 +324,8 @@ def handle_options(parser):
 	if validate_options(opts, args) :
 		parser.print_help()
 		sys.exit(1)
+
+	config.input_dir = args[0]
 
 	if (opts.output_mode) :
 		config.output_mode = opts.output_mode

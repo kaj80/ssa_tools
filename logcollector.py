@@ -152,17 +152,21 @@ def main(argv):
                       help = 'Provide file with SSA setup topology',
                       metavar = 'topofile.ini')
     parser.add_option('-o', '--output_folder', dest = 'output_folder', help = 'Output folder')
+    parser.add_option('-s', '--shared_folder', dest = 'shared_folder', help = 'Shared network folder')
     (options, _) = parser.parse_args(argv)
 
     if not options.topology:
         parser.print_help()
         return 1
 
-    dict_global['topology'] = options.topology
-    dict_global.update(ssa_tools_utils.read_config(options.topology))
+    if options.shared_folder:
+       dict_global['dest_dir'] = options.shared_folder
 
     if options.output_folder:
         dict_global['dest_dir_archive'] = False
+
+    dict_global['topology'] = options.topology
+    dict_global.update(ssa_tools_utils.read_config(options.topology))
 
     collect_logs(dict_global)
 

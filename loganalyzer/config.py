@@ -202,13 +202,13 @@ class la_config :
 				},
 			    'acm_receive' :
 				{
-				  'start' : '', # TBD
-				  'end' : '' # TBD
+				  'start' : '(?P<start_time>.*) \[(?P<event_thread_id>.*)\]: ssa_upstream_update_conn: SSA_DB_FIELD_DEFS ssa_db allocated pp_field_tables .*',
+				  'end' : '(?P<end_time>.*) \[(?P<event_thread_id>.*)\]: ssa_upstream_update_conn: ssa_db .* complete'
 				},
 			    'acm_populate' :
 				{
-				  'start' : '', # TBD
-				  'end' : '' # TBD
+				  'start' : '(?P<start_time>.*) \[(?P<event_thread_id>.*)\]: acm_parse_ssa_db: updating cache with new PRDB epoch 0x.*',
+				  'end' : '(?P<end_time>.*) \[(?P<event_thread_id>.*)\]: acm_parse_ssa_db: cache update complete with IPDB epochs: .*'
 				},
 			    'acm_pr_resolve' :
 				{

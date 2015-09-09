@@ -78,6 +78,14 @@ def compare_outs (out0, out1, index):
 	return "Unequal"
 
 
+def find_active_ib_port(node):
+
+    #assumes onlu 2 ports, called ib0 and ib1
+    (rc, out) = ssa_tools_utils.execute_on_remote('ibportstate -D 0 1 | grep LinkUp', node)
+    if len(out) > 0:
+        return 'ib0'
+    return 'ib1'
+
 
 def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
@@ -273,6 +281,7 @@ def test_acm_by_ip (acms, sample_ips, data):
             status = test_acm_by_ip_query(node, sip, ip)
             if status != 0:
                 break
+    
 
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'After IP test\n', out0
@@ -285,6 +294,38 @@ def test_acm_by_ip (acms, sample_ips, data):
 
     return status
 
+def test_acm_ip_kernel_cache (acms, sample_ips):
+
+    status = 0
+
+    print '==================================================================='
+    print '================== TEST ACM IP KERNEL CACHE ======================='
+    print '==================================================================='
+
+    for node in acms:
+
+        if node == '':
+            continue
+
+        active_port = find_active_ib_port(node)
+
+        for ip in sample_ips:
+
+            (rc, out) = ssa_tools_utils.execute_on_remote('ip neigh show dev %s %s' % (active_port, ip), node)
+            if len(out) == 0:
+                status = 2
+                break
+            if out.split()[-1] != 'PERMANENT':
+                status = 2
+                break
+
+    print 'Run on %d nodes, eact to %d ips' % (len(acms), len(sample_ips))
+
+    print '==================================================================='
+    print '========== TEST ACM IP KERNEL CACHE COMPLETE (status: %d) =========' % (status)
+    print '==================================================================='
+
+    return status
 
 
 def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
@@ -332,6 +373,10 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
         return status
 
     status = test_acm_by_ip(acms, sample_ips, data)
+    if status != 0:
+        return status
+
+    status = test_acm_ip_kernel_cache(acms, sample_ips)
     if status != 0:
         return status
 

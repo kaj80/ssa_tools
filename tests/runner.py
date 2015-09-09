@@ -101,6 +101,7 @@ def setup(topology, action = 'status'):
     log_file = '%s/maintain_%s.log' % (rch_global_dict['output_folder'], time.strftime("%Y%m%d_%H%M"))
     print '%s/maintain.py -t %s --setup %s > %s' % (ssa_tools_utils.SSA_HOME, topology, action, log_file)
     os.system('%s/maintain.py -t %s --setup %s > %s' % (ssa_tools_utils.SSA_HOME, topology, action, log_file))
+    time.sleep(10)
     return log_file
 
 

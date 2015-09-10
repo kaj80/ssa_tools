@@ -275,9 +275,12 @@ def test_acm_by_ip (acms, sample_ips, data):
         if node == '':
             continue
 
-        (_, sip)   = ssa_tools_utils.execute_on_remote("cat /tmp/ip", node)
-        #the /tmp/ip file is created by the gen_host_data.sh script
+        active_port = find_active_ib_port(node)
 
+        (_, sip)   = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep inet \
+                                        | awk '{print $2}'  | cut -f1 -d'/'" \
+                                        % (active_port), node)
+        
         print 'Testing %s with %d IPs' % (node, len(sample_ips))
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'Before IP test\n', out0

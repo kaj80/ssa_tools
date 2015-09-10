@@ -39,6 +39,11 @@ def get_opts ():
                       help = 'Provide file with SSA setup topology', \
                       metavar = 'setup_example.ini')
 
+    parser.add_option('-s', \
+                      dest = 'sample_size', \
+                      help = 'Provide number of ACM clients to be tested', \
+                      metavar = '<sample size>')
+
     (options, _) = parser.parse_args()
     if not options.topology:
         parser.print_help()
@@ -46,6 +51,10 @@ def get_opts ():
 
     if not os.path.exists(options.topology):
         print '%s not found' % options.topology
+        sys.exit(1)
+
+    if options.sample_size and int(options.sample_size) < 0:
+        print 'Invalid sample size specified (%s)' % options.sample_size
         sys.exit(1)
 
     return options
@@ -538,7 +547,12 @@ def sanity_test_1 (cores, als, acms, data):
 
 def main (argv):
 
+    global sample_size
+
     opts = get_opts()
+
+    if opts.sample_size:
+        sample_size = int(opts.sample_size)
 
     #
     # Fabric data dictionary format:

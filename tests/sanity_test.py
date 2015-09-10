@@ -29,7 +29,11 @@ ib_acme         = '/usr/local/bin/ib_acme'
 route_cache_count_index = -1
 addr_cache_count_index = -3
 sample_size     = 5
-
+#assumes default file location and name:
+core_preload_file_path = '/etc/rdma/ibssa_hosts.data'
+access_node_change_index = 0
+alt_access_ip = 101.0.0.100
+alt_access_netmask = 255.255.0.0 #currently - no change
 ##############################################################
 
 def get_opts ():
@@ -415,6 +419,37 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
 
     return status
 
+def change_node_ip(node, new_ip, new_netmask):
+
+    active_port = find_active_ib_port(node)
+    (rc, ret) = ssa_tools_utils.execute_on_remote('ifconfig %s %s netmask %s && echo $?' % (active_port, new_ip, new_netmask), node)
+    if ret != '0':
+        print 'ERROR: failed to reconfigure IP of node %s' % (node)
+        return -1
+    return 0 
+
+def change_and_load_ip(cores, old_ip, new_ip):
+ 
+    for core in cores:
+        (_, out) = ssa_tools_utils.execute_on_remote("sed -i 's/^%s/%s/g' %s" % (old_ip, new_ip, core_preload_file_path), core)
+        (_, out) = ssa_tools_utils.execute_on_remote("kill -s HUP `pidof opensm`", node) #FIXME - necessary to do in all cores??
+    return None
+
+def ip_flow_modification_test(cores, als, acms):
+
+    status = 0
+    if len(als) == 0:
+        print 'ERROR: no access node found'
+        status = 1
+    else:
+        changed_node = als[access_node_change_index]
+        old_ip = get_node_ip(changed_node) #FIXME: add this function
+        status = change_node_ip(changed_node, alt_access_ip, alt_access_netmask)
+        if status != 0:
+            return 2
+        change_and_load_ip(changed_node, old_ip, alt_access_ip)
+        
+        
 
 def get_node_remote (node):
     #

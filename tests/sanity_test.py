@@ -307,15 +307,26 @@ def test_acm_ip_kernel_cache (acms, sample_ips):
         if node == '':
             continue
 
+        print 'Executing kernel cache test on node %s' % (node)
+
         active_port = find_active_ib_port(node)
+
+        (_, ip_line) = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep inet" % active_port, node)
 
         for ip in sample_ips:
 
+            if ip_line.find(ip) > 0:
+                print "no need to look for node %s ip in its own cache:" % (node)
+                print "therefore the serach for ip %s is skipped" % (ip)
+                print ''
+                continue
             (rc, out) = ssa_tools_utils.execute_on_remote('ip neigh show dev %s %s' % (active_port, ip), node)
             if len(out) == 0:
+                print 'ERROR: ip %s not found in node %s cache' % (ip, node)
                 status = 2
                 break
             if out.split()[-1] != 'PERMANENT':
+                print 'ERROR: ip %s node %s cache is not PERMANENT' % (ip, node)
                 status = 2
                 break
 

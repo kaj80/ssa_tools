@@ -26,7 +26,10 @@ import ssa_tools_utils
 (TYPE, STATUS, LID, GID, VERSION) = (0, 1, 2, 3, 4)
 
 ib_acme         = '/usr/local/bin/ib_acme'
+route_cache_count_index = -1
+addr_cache_count_index = -3
 sample_size     = 5
+
 ##############################################################
 
 def get_opts ():
@@ -67,16 +70,26 @@ def get_ip_data ():
     return ip_data_str.split()
 
 
-def compare_outs (out0, out1, index):
+def compare_outs (out0, out1, index_to_compare):
 
 	try:
-		if out1.split()[-4].split(',')[index] == out0.split()[-4].split(',')[index]:
-			return "Equal"
+		if out1.split()[-4].split(',')[index_to_compare] == out0.split()[-4].split(',')[index_to_compare]:
+			return 0
+                        #values are equal
 	except:
-		return "Exception"
+		return -1
 
-	return "Unequal"
+	return 1
+        #values are not equal
 
+
+def find_active_ib_port(node):
+
+    #assumes onlu 2 ports, called ib0 and ib1
+    (rc, out) = ssa_tools_utils.execute_on_remote('ibportstate -D 0 1 | grep LinkUp', node)
+    if len(out) > 0:
+        return 'ib0'
+    return 'ib1'
 
 
 def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
@@ -102,14 +115,14 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
 
-    ret = compare_outs(out0, out1, -1)
-    if ret == "Equal":
+    ret = compare_outs(out0, out1, route_cache_count_index)
+    if ret == 0:
         if print_err == 1:
             print 'ERROR. %s PR was not taken from cache' % node
             (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
             print o
         status = 2
-    elif ret == "Exception":
+    elif ret == "-1":
         print 'ERROR. %s failed' % node
         (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
         print o
@@ -172,8 +185,8 @@ def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
         status = 1
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    ret = compare_outs(out0, out1, -1)
-    if ret == "Equal":
+    ret = compare_outs(out0, out1, route_cache_count_index)
+    if ret == 0:
         if print_err == 1:
             print 'error. %s pr was not taken from cache' % node
         status = 2
@@ -239,8 +252,8 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
 
     (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P' % ib_acme, node)
 
-    ret = compare_outs(out0, out1, -3)
-    if ret == "Equal":
+    ret = compare_outs(out0, out1, addr_cache_count_index)
+    if ret == 0:
         if print_err == 1:
              print 'error. %s pr was not taken from cache' % node
         status = 2
@@ -274,6 +287,7 @@ def test_acm_by_ip (acms, sample_ips, data):
             if status != 0:
                 break
 
+
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'After IP test\n', out0
 
@@ -285,6 +299,49 @@ def test_acm_by_ip (acms, sample_ips, data):
 
     return status
 
+def test_acm_ip_kernel_cache (acms, sample_ips):
+
+    status = 0
+
+    print '==================================================================='
+    print '================== TEST ACM IP KERNEL CACHE ======================='
+    print '==================================================================='
+
+    for node in acms:
+
+        if node == '':
+            continue
+
+        print 'Executing kernel cache test on node %s' % (node)
+
+        active_port = find_active_ib_port(node)
+
+        (_, ip_line) = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep inet" % active_port, node)
+
+        for ip in sample_ips:
+
+            if ip_line.find(ip) > 0:
+                print "no need to look for node %s ip in its own cache:" % (node)
+                print "therefore the serach for ip %s is skipped" % (ip)
+                print ''
+                continue
+            (rc, out) = ssa_tools_utils.execute_on_remote('ip neigh show dev %s %s' % (active_port, ip), node)
+            if len(out) == 0:
+                print 'ERROR: ip %s not found in node %s cache' % (ip, node)
+                status = 2
+                break
+            if out.split()[-1] != 'PERMANENT':
+                print 'ERROR: ip %s node %s cache is not PERMANENT' % (ip, node)
+                status = 2
+                break
+
+    print 'Run on %d nodes, eact to %d ips' % (len(acms), len(sample_ips))
+
+    print '==================================================================='
+    print '========== TEST ACM IP KERNEL CACHE COMPLETE (status: %d) =========' % (status)
+    print '==================================================================='
+
+    return status
 
 
 def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
@@ -332,6 +389,10 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
         return status
 
     status = test_acm_by_ip(acms, sample_ips, data)
+    if status != 0:
+        return status
+
+    status = test_acm_ip_kernel_cache(acms, sample_ips)
     if status != 0:
         return status
 
@@ -484,15 +545,14 @@ def main (argv):
     #
     fabric_data = get_data(opts.topology)
 
-    ip_data = get_ip_data()
-
     cores   = []
     als     = []
     acms    = []
 
     lids    = []
     gids    = []
-    ips     = []
+
+    ips = get_ip_data()
 
     status  = 0
 
@@ -513,9 +573,6 @@ def main (argv):
             gids.append(fabric_data[node][GID].encode('ascii','ignore'))
         except:
             pass
-
-    for ip in ip_data:
-            ips.append(ip)
 
     if len(cores) != 2 or len(als) != 2 or len(acms) < 2:
         status = 1

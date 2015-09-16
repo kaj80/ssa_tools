@@ -32,8 +32,10 @@ sample_size     = 5
 #assumes default file location and name:
 core_preload_file_path = '/etc/rdma/ibssa_hosts.data'
 access_node_change_index = 0
-alt_access_ip = 101.0.0.100
-alt_access_netmask = 255.255.0.0 #currently - no change
+alt_node_ip = '101.0.0.100'
+alt_node_netmask = '255.255.0.0' #currently - no change
+sanity_0_title = '++++++++++++++++++++++ UNDER SANITY TEST 0 ++++++++++++++++++++++++'
+modification_flow_title = '++++++++++++++++++ UNDER MODIFICATION FLOW TEST +++++++++++++++++++'
 ##############################################################
 
 def get_opts ():
@@ -74,14 +76,12 @@ def get_data (topology):
 
     return data
 
-
 def get_ip_data ():
     #takes ip data from the file used for data preloading
     file_location = '/etc/rdma'
     file_name = 'ibssa_hosts.data'
     ip_data_str = commands.getoutput("cat %s/%s | awk '{print $1}'" % (file_location,file_name))
     return ip_data_str.split()
-
 
 def compare_outs (out0, out1, index_to_compare):
 
@@ -95,8 +95,6 @@ def compare_outs (out0, out1, index_to_compare):
 	return 1
        #values are not equal
 
-
-
 def find_active_ib_port(node):
 
     #assumes onlu 2 ports, called ib0 and ib1
@@ -105,6 +103,13 @@ def find_active_ib_port(node):
         return 'ib0'
     return 'ib1'
 
+def get_node_ip(node,node_active_port):
+
+    (_, ip)   = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep 'inet ' \
+                                        | awk '{print $2}'  | cut -f1 -d'/' \
+                                        | tr -d '\n'" \
+                                        % (node_active_port), node)
+    return ip
 
 def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
@@ -174,7 +179,7 @@ def test_acm_by_lid (acms, sample_lids, data):
     print 'Run on %d nodes, each to %d lids' % (len(acms), len(sample_lids))
 
     print '==================================================================='
-    print '========= TEST ACM BY LID COMPLETE (status: %d) ====================' % (status)
+    print '=========== TEST ACM BY LID COMPLETE (status: %d) =================' % (status)
     print '==================================================================='
 
     return status
@@ -275,12 +280,13 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
     return status
 
 
-def test_acm_by_ip (acms, sample_ips, data):
+def test_acm_by_ip (acms, sample_ips, title):
 
     status = 0
 
+    print '%s' % title
     print '==================================================================='
-    print '======================= TEST ACM BY IP ==========================='
+    print '======================= TEST ACM BY IP ============================'
     print '==================================================================='
 
     for node in acms:
@@ -289,11 +295,8 @@ def test_acm_by_ip (acms, sample_ips, data):
             continue
 
         active_port = find_active_ib_port(node)
+        sip = get_node_ip(node, active_port)
 
-        (_, sip)   = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep inet \
-                                        | awk '{print $2}'  | cut -f1 -d'/'" \
-                                        % (active_port), node)
-        
         print 'Testing %s with %d IPs' % (node, len(sample_ips))
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'Before IP test\n', out0
@@ -316,10 +319,24 @@ def test_acm_by_ip (acms, sample_ips, data):
 
     return status
 
-def test_acm_ip_kernel_cache (acms, sample_ips):
+def search_kernel_cache_for_ip(node, active_port, ip_to_search, entry_type):
+
+    status = 0
+    (rc, out) = ssa_tools_utils.execute_on_remote('ip neigh show dev %s %s' % (active_port, ip_to_search), node)
+    if len(out) == 0:
+        print 'ERROR: ip %s not found in node %s cache' % (ip_to_search, node)
+        status = 2
+        return status
+    if out.split()[-1] != entry_type:
+        print 'ERROR: ip %s node %s cache is not %s' % (ip_to_search, node, entry_type)
+        status = 2
+    return status
+
+def test_acm_ip_kernel_cache (acms, sample_ips,title):
 
     status = 0
 
+    print '%s' % title
     print '==================================================================='
     print '================== TEST ACM IP KERNEL CACHE ======================='
     print '==================================================================='
@@ -333,7 +350,7 @@ def test_acm_ip_kernel_cache (acms, sample_ips):
 
         active_port = find_active_ib_port(node)
 
-        (_, ip_line) = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep inet" % active_port, node)
+        (_, ip_line) = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep inet" % active_port, node) #FIXME - switch to function call?
 
         for ip in sample_ips:
 
@@ -342,15 +359,7 @@ def test_acm_ip_kernel_cache (acms, sample_ips):
                 print "therefore the serach for ip %s is skipped" % (ip)
                 print ''
                 continue
-            (rc, out) = ssa_tools_utils.execute_on_remote('ip neigh show dev %s %s' % (active_port, ip), node)
-            if len(out) == 0:
-                print 'ERROR: ip %s not found in node %s cache' % (ip, node)
-                status = 2
-                break
-            if out.split()[-1] != 'PERMANENT':
-                print 'ERROR: ip %s node %s cache is not PERMANENT' % (ip, node)
-                status = 2
-                break
+            status = search_kernel_cache_for_ip(node, active_port, ip, 'PERMANENT')
 
     print 'Run on %d nodes, eact to %d ips' % (len(acms), len(sample_ips))
 
@@ -405,11 +414,11 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
     if status != 0:
         return status
 
-    status = test_acm_by_ip(acms, sample_ips, data)
+    status = test_acm_by_ip(acms, sample_ips, sanity_0_title)
     if status != 0:
         return status
 
-    status = test_acm_ip_kernel_cache(acms, sample_ips)
+    status = test_acm_ip_kernel_cache(acms, sample_ips, sanity_0_title)
     if status != 0:
         return status
 
@@ -422,34 +431,77 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
 def change_node_ip(node, new_ip, new_netmask):
 
     active_port = find_active_ib_port(node)
-    (rc, ret) = ssa_tools_utils.execute_on_remote('ifconfig %s %s netmask %s && echo $?' % (active_port, new_ip, new_netmask), node)
-    if ret != '0':
-        print 'ERROR: failed to reconfigure IP of node %s' % (node)
-        return -1
+    (rc, ret) = ssa_tools_utils.execute_on_remote('ifconfig %s %s netmask %s' % (active_port, new_ip, new_netmask), node)
+    #assumes reconfiguring doesn't fail  FIXME
     return 0 
 
 def change_and_load_ip(cores, old_ip, new_ip):
  
     for core in cores:
         (_, out) = ssa_tools_utils.execute_on_remote("sed -i 's/^%s/%s/g' %s" % (old_ip, new_ip, core_preload_file_path), core)
-        (_, out) = ssa_tools_utils.execute_on_remote("kill -s HUP `pidof opensm`", node) #FIXME - necessary to do in all cores??
+        (_, out) = ssa_tools_utils.execute_on_remote("kill -s HUP `pidof opensm`", core) #FIXME - necessary to do in all cores??
+
     return None
 
-def ip_flow_modification_test(cores, als, acms):
+
+def test_modification_flow(acms, data, changed_node, old_ip, new_ip):
+
+    print 'test flow mod - old ip is %s' % old_ip
+    status = 0
+    for node in acms:
+        node_lid = data[node][LID]
+        node_active_port = find_active_ib_port(node)
+        (_,_) = ssa_tools_utils.execute_on_remote('ib_acme %s -f l -d %s -s %s -c -v' % (ib_acme, node_lid, node_lid), node)
+        if status != 0:
+            break
+        status = search_kernel_cache_for_ip(node,node_active_port,new_ip,'PERMANENT')
+        if status != 0:
+            break
+    if status != 0:
+        return status
+ 
+    arr = [new_ip]
+    status = test_acm_by_ip(acms, arr, modification_flow_title)
+ 
+    return status
+
+def ip_modification_flow_test(cores, als, acms, data):
+
+    print '==================================================================='
+    print '================== TEST IP MODIFICATION FLOW  ====================='
+    print '==================================================================='
 
     status = 0
     if len(als) == 0:
         print 'ERROR: no access node found'
-        status = 1
+        status = 3
     else:
         changed_node = als[access_node_change_index]
-        old_ip = get_node_ip(changed_node) #FIXME: add this function
-        status = change_node_ip(changed_node, alt_access_ip, alt_access_netmask)
+        active_port = find_active_ib_port(changed_node)
+        old_ip = get_node_ip(changed_node, active_port)
+        status = change_node_ip(changed_node, alt_node_ip, alt_node_netmask)
         if status != 0:
-            return 2
-        change_and_load_ip(changed_node, old_ip, alt_access_ip)
-        
-        
+            status = 4
+        else:
+            change_and_load_ip(cores, old_ip, alt_node_ip)
+            status = test_modification_flow(acms, data, changed_node, old_ip, alt_node_ip)
+
+    succ = change_node_ip(changed_node, old_ip, alt_node_netmask) #FIXME fix last variable
+    if succ != 0:
+        print 'ERROR: FAILED TO UNDO CHANGES TO NODE IP IN MODIFICATION FLOW TEST'
+        status = 4
+    if succ == 0:     
+        succ = change_and_load_ip(cores, new_ip, old_ip)
+        if succ != 0:
+            print 'ERROR: FAILED TO UNDO CHANGES TO PRELOADED FILES IN MODIFICATION FLOW TEST'
+            status = 4
+   
+
+    print '==================================================================='
+    print '========= TEST IP MODIFICATION FLOW COMPLETE (status: %d) =========' % (status)
+    print '==================================================================='
+
+    return status
 
 def get_node_remote (node):
     #
@@ -579,6 +631,19 @@ def sanity_test_1 (cores, als, acms, data):
 
     return status
 
+def run_tests(cores,als,acms,lids,gids,ips,fabric_data):
+
+    status = 0
+    status = sanity_test_0(cores, als, acms, lids, gids, ips, fabric_data)
+    if status != 0:
+        return status
+
+    status = ip_modification_flow_test(cores,als,acms, fabric_data)
+    if status != 0:
+         return status
+    status = sanity_test_1(cores, als, acms, fabric_data)
+    return status
+
 
 def main (argv):
 
@@ -630,9 +695,7 @@ def main (argv):
     if len(cores) != 2 or len(als) != 2 or len(acms) < 2:
         status = 1
     else:
-        status = sanity_test_0(cores, als, acms, lids, gids, ips, fabric_data)
-        if status == 0:
-            status = sanity_test_1(cores, als, acms, fabric_data)
+         status = run_tests(cores,als,acms,lids,gids,ips,fabric_data)
 
     # close all cached connections
     ssa_tools_utils.execute_on_remote_cleanup()

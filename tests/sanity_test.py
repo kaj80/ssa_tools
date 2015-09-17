@@ -111,6 +111,14 @@ def get_node_ip(node,node_active_port):
                                         % (node_active_port), node)
     return ip
 
+def get_node_ip_mask(node,node_active_port):
+
+    (_, mask) = ssa_tools_utils.execute_on_remote("ifconfig %s | grep Mask \
+                                        | awk '{print $4}' | tr -d '\n'" \
+                                        % (node_active_port), node)
+
+    return mask
+
 def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     status = 0
@@ -312,7 +320,7 @@ def test_acm_by_ip (acms, sample_ips, title):
         print 'After IP test\n', out0
 
     print 'Run on %d nodes, each to %d ips' % (len(acms), len(sample_ips))
-
+    print '%s' % title
     print '==================================================================='
     print '========== TEST ACM BY IP COMPLETE (status: %d) ===================' % (status)
     print '==================================================================='
@@ -441,7 +449,7 @@ def change_and_load_ip(cores, old_ip, new_ip):
         (_, out) = ssa_tools_utils.execute_on_remote("sed -i 's/^%s/%s/g' %s" % (old_ip, new_ip, core_preload_file_path), core)
         (_, out) = ssa_tools_utils.execute_on_remote("kill -s HUP `pidof opensm`", core) #FIXME - necessary to do in all cores??
 
-    return None
+    return 0
 
 
 def test_modification_flow(acms, data, changed_node, old_ip, new_ip):
@@ -459,10 +467,10 @@ def test_modification_flow(acms, data, changed_node, old_ip, new_ip):
             break
     if status != 0:
         return status
- 
+
     arr = [new_ip]
     status = test_acm_by_ip(acms, arr, modification_flow_title)
- 
+
     return status
 
 def ip_modification_flow_test(cores, als, acms, data):
@@ -479,6 +487,7 @@ def ip_modification_flow_test(cores, als, acms, data):
         changed_node = als[access_node_change_index]
         active_port = find_active_ib_port(changed_node)
         old_ip = get_node_ip(changed_node, active_port)
+        old_mask = get_node_ip_mask(changed_node,active_port)
         status = change_node_ip(changed_node, alt_node_ip, alt_node_netmask)
         if status != 0:
             status = 4
@@ -486,19 +495,20 @@ def ip_modification_flow_test(cores, als, acms, data):
             change_and_load_ip(cores, old_ip, alt_node_ip)
             status = test_modification_flow(acms, data, changed_node, old_ip, alt_node_ip)
 
-    succ = change_node_ip(changed_node, old_ip, alt_node_netmask) #FIXME fix last variable
-    if succ != 0:
+    undo_status = -1
+    if status != 3 and status != 4:
+        undo_status = 0
+        undo_status = change_node_ip(changed_node, old_ip, old_mask)
+    if undo_status >= 0: #FIXME: if no error check added on change_node_ip - remove these lines 
         print 'ERROR: FAILED TO UNDO CHANGES TO NODE IP IN MODIFICATION FLOW TEST'
-        status = 4
-    if succ == 0:     
-        succ = change_and_load_ip(cores, new_ip, old_ip)
-        if succ != 0:
+    if undo_status == 0:
+        undo_status = change_and_load_ip(cores, alt_node_ip, old_ip)
+        if undo_status != 0: #FIXME: if no error check added on change_and_load - remove these lines
             print 'ERROR: FAILED TO UNDO CHANGES TO PRELOADED FILES IN MODIFICATION FLOW TEST'
-            status = 4
-   
 
     print '==================================================================='
     print '========= TEST IP MODIFICATION FLOW COMPLETE (status: %d) =========' % (status)
+    print '=========       (modification-undo status: %d)            =========' % (undo_status)
     print '==================================================================='
 
     return status

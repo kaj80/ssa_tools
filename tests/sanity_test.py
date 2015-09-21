@@ -222,6 +222,9 @@ def test_acm_by_lid_gid (acms, sample_lids, sample_gids, data):
             if status != 0:
                 break
 
+        if status != 0:
+            break
+
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'After GID test\n', out0
 

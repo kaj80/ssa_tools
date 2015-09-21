@@ -31,10 +31,8 @@ addr_cache_count_index = -3
 sample_size     = 5
 # assumes default file location and name:
 CORE_PRELOAD_FILE_PATH = '/etc/rdma/ibssa_hosts.data'
-ALT_NODE_IP = '101.0.0.113'
+ALT_NODE_IP = '113.0.0.113'
 ALT_NODE_NETMASK = '255.255.0.0' # currently - no change
-SANITY_0_TITLE = '++++++++++++++++++++++ UNDER SANITY TEST 0 ++++++++++++++++++++++++'
-MODIFICATION_FLOW_TITLE = '++++++++++++++++++ UNDER MODIFICATION FLOW TEST +++++++++++++++++++'
 ##############################################################
 
 def get_opts ():
@@ -84,15 +82,15 @@ def get_ip_data ():
 
 def compare_outs (out0, out1, index_to_compare):
 
-	try:
-		if out1.split()[-4].split(',')[index_to_compare] == out0.split()[-4].split(',')[index_to_compare]:
-			return 0
-                       # values are equal
-	except:
-		return -1
+    try:
+        if out1.split()[-4].split(',')[index_to_compare] == out0.split()[-4].split(',')[index_to_compare]:
+            return 0
+            # values are equal
+    except:
+        return -1
 
-	return 1
-       # values are not equal
+    return 1
+    # values are not equal
 
 def get_active_ib_interface(node):
 
@@ -134,7 +132,7 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     if out.find('failed') >= 0 and out.find('success') < 0:
         if print_err == 1:
-            print 'ERROR. ACM on %s failed' % node
+            print 'ERROR. ACM on %s failed (lid test)' % node
             (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
             print o
         status = 1
@@ -144,7 +142,7 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
     ret = compare_outs(out0, out1, route_cache_count_index)
     if ret == 0:
         if print_err == 1:
-            print 'ERROR. %s PR was not taken from cache' % node
+            print 'ERROR. %s PR was not taken from cache (lid test)' % node
             (_, o) = ssa_tools_utils.execute_on_remote('/usr/local/bin/ibv_devinfo', node)
             print o
         status = 2
@@ -156,12 +154,40 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     return status
 
-def test_acm_by_lid (acms, sample_lids, data):
+def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
+
+    status = 0
+
+    if initial_query == 1:
+        print 'Executing initial ib_acme query on %s (gid %s) node' % (node, sgid)
+        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c' % (ib_acme, dgid, sgid), node)
+        time.sleep(10)
+
+    print '%s#  %s -f g -d %s -s %s -c -v' % (node, ib_acme, dgid, sgid)
+    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, dgid, sgid), node)
+    # print out
+
+    if out.find('failed') >= 0 and out.find('success') < 0:
+        if print_err == 1:
+            print 'error. acm on %s failed (gid test)' % node
+        status = 1
+
+    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    ret = compare_outs(out0, out1, route_cache_count_index)
+    if ret == 0:
+        if print_err == 1:
+            print 'error. %s pr was not taken from cache (gid test)' % node
+        status = 2
+
+    return status
+
+def test_acm_by_lid_gid (acms, sample_lids, sample_gids, data):
 
     status = 0
 
     print '==================================================================='
-    print '======================= TEST ACM BY LID ==========================='
+    print '=================== TEST ACM BY LID AND GID ======================='
     print '==================================================================='
 
     for node in acms:
@@ -183,55 +209,6 @@ def test_acm_by_lid (acms, sample_lids, data):
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'After LID test\n', out0
 
-    print 'Run on %d nodes, each to %d lids' % (len(acms), len(sample_lids))
-
-    print '==================================================================='
-    print '=========== TEST ACM BY LID COMPLETE (status: %d) =================' % (status)
-    print '==================================================================='
-
-    return status
-
-def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
-
-    status = 0
-
-    if initial_query == 1:
-        print 'Executing initial ib_acme query on %s (gid %s) node' % (node, sgid)
-        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c' % (ib_acme, dgid, sgid), node)
-        time.sleep(10)
-
-    print '%s#  %s -f g -d %s -s %s -c -v' % (node, ib_acme, dgid, sgid)
-    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, dgid, sgid), node)
-    # print out
-
-    if out.find('failed') >= 0 and out.find('success') < 0:
-        if print_err == 1:
-            print 'error. acm on %s failed' % node
-        status = 1
-
-    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    ret = compare_outs(out0, out1, route_cache_count_index)
-    if ret == 0:
-        if print_err == 1:
-            print 'error. %s pr was not taken from cache' % node
-        status = 2
-
-    return status
-
-
-def test_acm_by_gid (acms, sample_gids, data):
-
-    status = 0
-
-    print '==================================================================='
-    print '======================= TEST ACM BY GID ==========================='
-    print '==================================================================='
-
-    for node in acms:
-
-        if node == '':
-            continue
 
         (_, sgid)   = ssa_tools_utils.execute_on_remote("/usr/sbin/ibaddr |awk '{print $2}'", node)
 
@@ -248,14 +225,13 @@ def test_acm_by_gid (acms, sample_gids, data):
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'After GID test\n', out0
 
-    print 'Run on %d nodes, each to %d gids' % (len(acms), len(sample_gids))
+    print 'Run on %d nodes, each to %d lids and %d gids' % (len(acms), len(sample_lids), len(sample_gids))
 
     print '==================================================================='
-    print '========== TEST ACM BY GID COMPLETE (status: %d) ===================' % (status)
+    print '========= TEST ACM BY LID AND GID COMPLETE (status: %d) ===========' % (status)
     print '==================================================================='
 
     return status
-
 
 def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
 
@@ -286,46 +262,6 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
 
     return status
 
-
-def test_acm_by_ip (acms, sample_ips, title):
-
-    status = 0
-
-    print '%s' % title
-    print '==================================================================='
-    print '======================= TEST ACM BY IP ============================'
-    print '==================================================================='
-
-    for node in acms:
-
-        if node == '':
-            continue
-
-        active_interface = get_active_ib_interface(node)
-        sip = get_node_ip(node, active_interface)
-
-        print 'Testing %s with %d IPs' % (node, len(sample_ips))
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-        print 'Before IP test\n', out0
-
-        for ip in sample_ips:
-
-            status = test_acm_by_ip_query(node, sip, ip)
-            if status != 0:
-                break
-
-
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-        print 'After IP test\n', out0
-
-    print 'Run on %d nodes, each to %d ips' % (len(acms), len(sample_ips))
-    print '%s' % title
-    print '==================================================================='
-    print '========== TEST ACM BY IP COMPLETE (status: %d) ===================' % (status)
-    print '==================================================================='
-
-    return status
-
 def kcache_ip_lookup(node, active_interface, ip_to_search, entry_type):
 
     status = 0
@@ -339,13 +275,13 @@ def kcache_ip_lookup(node, active_interface, ip_to_search, entry_type):
         status = 2
     return status
 
-def test_acm_ip_kcache (acms, sample_ips,title):
+def test_ip (acms, sample_ips):
 
     status = 0
 
-    print '%s' % title
     print '==================================================================='
-    print '================== TEST ACM IP KERNEL CACHE ======================='
+    print '======================= TEST ACM BY IP ============================'
+    print '=======            (kernel and user caches)                ========'
     print '==================================================================='
 
     for node in acms:
@@ -353,25 +289,41 @@ def test_acm_ip_kcache (acms, sample_ips,title):
         if node == '':
             continue
 
-        print 'Executing kernel cache test on node %s' % (node)
-
         active_interface = get_active_ib_interface(node)
+        sip = get_node_ip(node, active_interface)
 
-        (_, ip_line) = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep inet" % active_interface, node) #FIXME - switch to function call?
-
+        print 'Testing %s with %d IPs' % (node, len(sample_ips))
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'Before IP test\n', out0
+        node_ip = get_node_ip(node, active_interface)
         for ip in sample_ips:
 
-            if ip_line.find(ip) > 0:
+            print 'Executing kernel cache test on node %s' % (node)
+
+            status = test_acm_by_ip_query(node, sip, ip)
+            if status != 0:
+                break
+
+            print 'Executing kernel cache test on node %s' % (node)
+
+            if ip == node_ip: 
                 print "no need to look for node %s ip in its own cache:" % (node)
                 print "therefore the serach for ip %s is skipped" % (ip)
                 print ''
                 continue
             status = kcache_ip_lookup(node, active_interface, ip, 'PERMANENT')
+            if status != 0:
+                break
 
-    print 'Run on %d nodes, eact to %d ips' % (len(acms), len(sample_ips))
+        if status != 0:
+            break
 
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'After IP test\n', out0
+
+    print 'Run on %d nodes, each to %d ips' % (len(acms), len(sample_ips))
     print '==================================================================='
-    print '========== TEST ACM IP KERNEL CACHE COMPLETE (status: %d) =========' % (status)
+    print '========== TEST ACM BY IP COMPLETE (status: %d) ===================' % (status)
     print '==================================================================='
 
     return status
@@ -413,19 +365,11 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
     sample_lids = random.sample(lids, min(len(lids), sample_size))
     sample_ips = random.sample(ips, min(len(ips), sample_size))
 
-    status = test_acm_by_gid(acms, sample_gids, data)
+    status = test_acm_by_lid_gid(acms, sample_lids, sample_gids, data)
     if status != 0:
         return status
 
-    status = test_acm_by_lid(acms, sample_lids, data)
-    if status != 0:
-        return status
-
-    status = test_acm_by_ip(acms, sample_ips, SANITY_0_TITLE)
-    if status != 0:
-        return status
-
-    status = test_acm_ip_kcache(acms, sample_ips, SANITY_0_TITLE)
+    status = test_ip(acms, sample_ips)
     if status != 0:
         return status
 
@@ -440,20 +384,18 @@ def change_node_ip(node, new_ip, new_netmask):
     active_interface = get_active_ib_interface(node)
     (rc, ret) = ssa_tools_utils.execute_on_remote('ifconfig %s %s netmask %s' % (active_interface, new_ip, new_netmask), node)
     # assumes reconfiguring doesn't fail  FIXME
-    return 0 
+    return 0
 
 def change_and_load_ip(cores, old_ip, new_ip):
- 
+
     for core in cores:
         (_, out) = ssa_tools_utils.execute_on_remote("sed -i 's/^%s/%s/g' %s" % (old_ip, new_ip, CORE_PRELOAD_FILE_PATH), core)
         (_, out) = ssa_tools_utils.execute_on_remote("kill -s HUP `pidof opensm`", core)
 
     return 0
 
-
 def test_mod_flow(acms, data, changed_node, old_ip, new_ip):
 
-    print 'test flow mod - old ip is %s' % old_ip
     status = 0
     for node in acms:
         node_lid = data[node][LID]
@@ -462,12 +404,11 @@ def test_mod_flow(acms, data, changed_node, old_ip, new_ip):
         status = kcache_ip_lookup(node,node_active_interface,new_ip,'PERMANENT')
         if status != 0:
             break
-    if status != 0:
-        return status
-
-    arr = [new_ip]
-    status = test_acm_by_ip(acms, arr, MODIFICATION_FLOW_TITLE)
-# FIXME: find way to decrease number of for-loops
+        arr = [new_ip]
+        sip = get_node_ip(node, node_active_interface)
+        status = test_acm_by_ip_query(node, sip, new_ip)
+        if status != 0:
+            break
 
     return status
 

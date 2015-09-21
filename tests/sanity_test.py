@@ -299,15 +299,12 @@ def test_ip (acms, sample_ips):
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'Before IP test\n', out0
         node_ip = get_node_ip(node, active_interface)
+        print 'Executing kernel and user cache tests on node %s' % (node)
         for ip in sample_ips:
-
-            print 'Executing kernel cache test on node %s' % (node)
 
             status = test_acm_by_ip_query(node, sip, ip)
             if status != 0:
                 break
-
-            print 'Executing kernel cache test on node %s' % (node)
 
             if ip == node_ip: 
                 print "no need to look for node %s ip in its own cache:" % (node)

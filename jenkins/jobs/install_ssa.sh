@@ -27,6 +27,8 @@ else
 	exit 1
 fi
 
+EXTRA_FLAGS="--enable-debug-commands"
+
 echo "Executing SSA installation ..."
 
 src_dir="$WORKSPACE/ibssa2"
@@ -46,7 +48,7 @@ echo "--symbolic" > $COVCCFG
 sudo rm -f $COVFILE
 covselect -i $WORKSPACE/ssa_tools/jenkins/ssa_cov_exclude
 cov01 -1
-./autogen.sh && ./configure CFLAGS="$CFLAGS" $OPTFLAGS && make clean && make -j && sudo -E make install
+./autogen.sh && ./configure CFLAGS="$CFLAGS" $OPTFLAGS $EXTRA_FLAGS && make clean && make -j && sudo -E make install
 rc=$?
 
 cov01 -0

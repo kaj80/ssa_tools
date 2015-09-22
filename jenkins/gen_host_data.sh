@@ -12,9 +12,12 @@ while read line; do
 
 	output_directory=/etc/rdma
 	ip_file=/tmp/ip
+        ipv6_file=/tmp/ipv6
 	flags_file=/tmp/flags
 	QP_file=/tmp/QP
 	GID_file=/tmp/GID
+
+	ipv6="F"
 
 	mkdir -p $output_directory
 
@@ -31,13 +34,16 @@ while read line; do
 
 	ip address show dev $port_name | grep "inet " | awk '\''{print $2}'\'' | cut -f1 -d'\''/'\'' > $ip_file
 
+	ip address show dev $port_name | grep "inet6" | awk '\''{print $2}'\'' | cut -f1 -d'\''/'\'' > $ipv6_file
+
 	(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | cut -f1 -d'\'':'\'' ; ) | tr -d '\''\n'\'' > $flags_file
 
 	(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | tr - : | cut -f2-4 -d'\'':'\'' ; ) | tr -d '\'':\n'\'' > $QP_file
 
 	ibaddr | awk '\''{print $2}'\'' > $GID_file
 
-	( ( cat /tmp/ip ; echo -e '\''\t\t'\'' ; cat /tmp/GID ; echo -e  '\''\t'\'' ; cat /tmp/QP ; echo -e '\''\t'\'' ; cat /tmp/flags ) | tr -d '\''\n'\''  ; echo '\'''\'' ; )
+	( ( cat /tmp/ip ; echo -e '\''\t\t\t'\'' ; cat /tmp/GID ; echo -e  '\''\t'\'' ; cat /tmp/QP ; echo -e '\''\t'\'' ; cat /tmp/flags ) | tr -d '\''\n'\''  ; echo '\'''\'' ; )
+		( ( cat /tmp/ipv6 ; echo -e '\''\t\t'\'' ; cat /tmp/GID ; echo -e '\''\t'\'' ; cat /tmp/QP ; echo -e '\''\t'\'' ; cat /tmp/flags ) | tr -d '\''\n'\'' ; echo '\'''\'' ; )
 	' >> $hostdata_output_file
 
 done < $hostname_input_file

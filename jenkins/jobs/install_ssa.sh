@@ -95,8 +95,9 @@ sudo rm -rf /var/cache/opensm
 #TEMORARY SOLUTION TO DEAL WITH IPv6 user-space problems FIXME
 
 sudo sed -i "s/^# support_ips_in_addr_cfg 0/support_ips_in_addr_cfg 1/g" $conf_dir/ibacm_opts.cfg
+
 ipv6_line=`cat $conf_dir/ibacm_addr.data | tail -1`
-part_to_replace=echo $ipv6_line | awk '{print $2}'
+part_to_replace=`echo $ipv6_line | awk '{print $2}'`
 gid=`ibaddr | awk '{print $2}'`
 ipv6_line=`echo $ipv6_line | sed "s/^$part_to_replace/$gid/"`
 echo $ipv6_line >> $conf_dir/ibacm_addr.data

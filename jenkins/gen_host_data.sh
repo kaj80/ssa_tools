@@ -34,7 +34,7 @@ while read line; do
 
 	ip address show dev $port_name | grep "inet " | awk '\''{print $2}'\'' | cut -f1 -d'\''/'\'' > $ip_file
 
-	ip address show dev $port_name | grep "inet6" | awk '\''{print $2}'\'' | cut -f1 -d'\''/'\'' > $ipv6_file
+	ip address show dev $port_name | grep "inet6" | awk '\''{print $2}'\'' | sed -n 1p | cut -f1 -d'\''/'\'' > $ipv6_file
 
 	(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | cut -f1 -d'\'':'\'' ; ) | tr -d '\''\n'\'' > $flags_file
 

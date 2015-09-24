@@ -7,13 +7,24 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 	ip=$(echo $line | awk '{print $2}')
 	host=$(echo $line | awk '{print $1}')
 
+	sudo pdsh -w $host "
+
+		if ibportstate -D 0 1 | grep -q LinkUp; then
+
+			ifconfig ib0 $ip netmask 255.255.0.0
+
+		elif ibportstate -D 0 2 | grep -q LinkUp; then
+
+			ifconfig ib1 $ip netmask 255.255.0.0
+
+		fi
+	"
+
 	sudo pdsh -w $host '
 
-		gid_file=/tmp/conifig_gid
+		gid_file=/tmp/config_gid
 
 		ipv6_file=/tmp/config_IPv6
-
-		has_ipv6="F"
 
 		if ibportstate -D 0 1 | grep -q LinkUp; then
 
@@ -25,24 +36,14 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 
 		fi
 
-
-		if ip addr show dev $port_name | grep -q inet6; then
-
-			has_ipv6="T"
-
-		fi
-
 		ibaddr | awk '\''{print $2}'\'' | tr -d '\''\n'\''  > $gid_file
 
 		(cat $gid_file | cut -f1 -d'\'':'\'' ; echo ::202: ; cat $gid_file | cut -f4-6 -d'\'':'\'') | tr -d '\''\n'\'' > $ipv6_file
 
-		ifconfig $port_name $ip netmask 255.255.0.0
-
-		if [ "$has_ipv6" = "F" ]; then
+		if ! ip addr show dev $port_name | grep -q inet6; then
 
 			ifconfig $port_name inet6 add `cat $ipv6_file`/64
 		fi
 
 	'
-	#echo "ifconfig $interface $ip netmask 255.255.0.0"
 done

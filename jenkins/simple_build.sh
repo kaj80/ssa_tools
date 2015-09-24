@@ -10,7 +10,7 @@ for dir in "$basedir"/*; do
 	cd $dir && ./autogen.sh && ./configure CFLAGS="-g -O0 -rdynamic"  && make $make_opt && sudo make $make_op install
 	rc=$?
 	if [[ $rc -ne 0 ]]; then
-		echo "Failed to build $dir"
+		echo "ERROR: FAILED TO BUILD $dir"
 		let status=status+rc
 	fi
     fi

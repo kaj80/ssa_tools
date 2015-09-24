@@ -31,6 +31,7 @@ if [ $install_type == "UPSTR" ]; then
 
 	./ssa_tools/ssa_setup.sh lib_download
 	./ssa_tools/jenkins/simple_build.sh $upstream_dir
+	status=$?
 elif [ $install_type == "MOFED" ]; then
 	if [ -z $MOFED_VERSION ]; then
 		latest_ptr="latest"

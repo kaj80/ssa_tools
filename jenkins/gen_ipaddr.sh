@@ -2,6 +2,7 @@
 
 input_files=""
 ip_prefix=${SSA_IP_PREFIX:-"100.0.0."}
+ipv6_prefix=${SSA_IPV6_PREFIX:-"fec0::"}
 
 for var in "$@"
 do
@@ -23,7 +24,9 @@ cat $input_files | while read line; do
 
         ip_num=$(echo $line | tr -dc '0-9')
 
-	( printf "%-20s $ip_prefix%s\n" "$line" "${ip_num##0}" )
+	ip_num=${ip_num##0}
+
+	( printf "%-25s $ip_prefix$ip_num\t\t$ipv6_prefix$ip_num%s\n" "$line")
 done
 
 exit 0

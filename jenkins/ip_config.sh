@@ -5,6 +5,7 @@ SSA_HOSTS_ADDR_FILE="${SSA_HOSTS_ADDR_FILE:-ssa.hosts.ipaddr}"
 
 cat $SSA_HOSTS_ADDR_FILE | while read line; do
 	ip=$(echo $line | awk '{print $2}')
+	ipv6=$(echo $line | awk '{print $3}')
 	host=$(echo $line | awk '{print $1}')
 
 	sudo pdsh -w $host "
@@ -18,13 +19,12 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 			ifconfig ib1 $ip netmask 255.255.0.0
 
 		fi
+
+		echo $ipv6 > /tmp/my_ipv6
 	"
 
 	sudo pdsh -w $host '
 
-		gid_file=/tmp/config_gid
-
-		ipv6_file=/tmp/config_IPv6
 
 		if ibportstate -D 0 1 | grep -q LinkUp; then
 
@@ -36,13 +36,37 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 
 		fi
 
-		ibaddr | awk '\''{print $2}'\'' | tr -d '\''\n'\''  > $gid_file
+		has_site_addr=0
 
-		(cat $gid_file | cut -f1 -d'\'':'\'' ; echo ::202: ; cat $gid_file | cut -f4-6 -d'\'':'\'') | tr -d '\''\n'\'' > $ipv6_file
+		suffix=/64
 
-		if ! ip addr show dev $port_name | grep -q inet6; then
 
-			ifconfig $port_name inet6 add `cat $ipv6_file`/64
+		ip addr show dev ib0 | grep '\''inet6'\'' | while read line; do
+
+			if echo $line | grep -q '\''scope site'\''; then
+
+				has_site_addr=1
+
+			else
+
+				ipv6_addr=`echo /tmp/my_ipv6 | tr -d '\''\n'\''`
+
+				ip -6 addr del $ipv6_addr dev $port_name
+
+			fi
+
+
+		done
+
+		if [ "$has_site_addr" = "0" ]; then
+	
+
+			ipv6_addr=`cat /tmp/my_ipv6 | tr -d '\''\n'\''`
+
+			ipv6_addr=$ipv6_addr$suffix
+
+			ip -6 addr add $ipv6_addr dev $port_name
+
 		fi
 
 	'

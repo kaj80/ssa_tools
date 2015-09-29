@@ -44,7 +44,6 @@ while read line; do
 		printf "%-30s $GID\t\t$QP\t$flags%s\n" "$ipv6" ; )
 
 	' >> $hostdata_output_file
-	' >> $hostdata_output_file
 
 done < $hostname_input_file
 

@@ -35,7 +35,7 @@ while read line; do
 
 	flags=`(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | cut -f1 -d'\'':'\'' ; ) | tr -d '\''\n'\''`
 
-	QP=`(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | tr - : | cut -f2-4 -d'\'':'\'' ; ) | tr -d '\''\n'\''`
+	QP=`(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | tr - : | cut -f2-4 -d'\'':'\'' ; ) | tr -d '\'':\n'\''`
 
 	GID=`ibaddr | awk '\''{print $2}'\''`
 

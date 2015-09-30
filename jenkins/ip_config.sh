@@ -36,36 +36,33 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 
 		fi
 
-		has_site_addr=0
+		correct_addr=`cat /tmp/my_ipv6`
+
+		has_correct_addr=0
 
 		suffix=/64
 
+		correct_addr=$correct_addr$suffix
 
-		ip addr show dev ib0 | grep '\''inet6'\'' | while read line; do
+		ip addr show dev $port_name | grep '\''inet6'\'' | while read line; do
 
-			if echo $line | grep -q '\''scope site'\''; then
+			ipv6_addr=`echo $line | awk '\''{print $2}'\''`
 
-				has_site_addr=1
+			if [ "$ipv6_addr" = "$correct_addr" ]; then
+
+				has_correct_addr=1
 
 			else
-
-				ipv6_addr=`echo /tmp/my_ipv6 | tr -d '\''\n'\''`
 
 				ip -6 addr del $ipv6_addr dev $port_name
 
 			fi
 
-
 		done
 
-		if [ "$has_site_addr" = "0" ]; then
-	
+		if [ "$has_correct_addr" = "0" ]; then
 
-			ipv6_addr=`cat /tmp/my_ipv6 | tr -d '\''\n'\''`
-
-			ipv6_addr=$ipv6_addr$suffix
-
-			ip -6 addr add $ipv6_addr dev $port_name
+			ip -6 addr add $correct_addr dev $port_name
 
 		fi
 

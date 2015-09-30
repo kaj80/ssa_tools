@@ -272,7 +272,7 @@ def ssa_clean_setup(ssa_global_dict):
         cmds.append('rm -rf /var/lock/subsys/%s /var/run/%s.pid /var/log/ibssa.log /var/log/ibacm.log' % (i, i) )
     cmds.append('rm -rf /etc/rdma/*db_dump.*')
     cmds.append('/bin/dmesg -c >/dev/null' )
-    cmds.append('/sbin/ifconfig ib0 down' )
+#    cmds.append('/sbin/ifconfig ib0 down' )
 
     return rm_exec(cmds, node_list)
 

@@ -28,11 +28,11 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 
 		if ibportstate -D 0 1 | grep -q LinkUp; then
 
-			port_name=ib0
+			interface=ib0
 
 		else
 
-			port_name=ib1
+			interface=ib1
 
 		fi
 
@@ -44,27 +44,15 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 
 		correct_addr=$correct_addr$suffix
 
-		ip addr show dev $port_name | grep '\''inet6'\'' | while read line; do
+		ip addr show dev $interface | grep '\''inet6'\'' | while read line; do
 
 			ipv6_addr=`echo $line | awk '\''{print $2}'\''`
 
-			if [ "$ipv6_addr" = "$correct_addr" ]; then
-
-				has_correct_addr=1
-
-			else
-
-				ip -6 addr del $ipv6_addr dev $port_name
-
-			fi
+			ip -6 addr del $ipv6_addr dev $interface
 
 		done
 
-		if [ "$has_correct_addr" = "0" ]; then
-
-			ip -6 addr add $correct_addr dev $port_name
-
-		fi
+		ip -6 addr add $correct_addr dev $interface
 
 	'
 done

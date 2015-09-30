@@ -11,10 +11,8 @@ while read line; do
 	ssh -n $line '
 
 	output_directory=/etc/rdma
-	ip_file=/tmp/ip
-	flags_file=/tmp/flags
-	QP_file=/tmp/QP
-	GID_file=/tmp/GID
+
+	ipv6="F"
 
 	mkdir -p $output_directory
 
@@ -29,15 +27,22 @@ while read line; do
 	fi
 
 
-	ip address show dev $port_name | grep "inet " | awk '\''{print $2}'\'' | cut -f1 -d'\''/'\'' > $ip_file
+	ip=`ip address show dev $port_name | grep "inet " | awk '\''{print $2}'\''` # retrieve ip
+	ip=`echo $ip | cut -f1 -d'\''/'\''` # get rid of irrelevant part
 
-	(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | cut -f1 -d'\'':'\'' ; ) | tr -d '\''\n'\'' > $flags_file
+	ipv6=`ip address show dev $port_name | grep "inet6" | awk '\''{print $2}'\''`
+	ipv6=`echo $ipv6 | sed -n 1p | cut -f1 -d'\''/'\''`
 
-	(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | tr - : | cut -f2-4 -d'\'':'\'' ; ) | tr -d '\'':\n'\'' > $QP_file
+	flags=`(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | cut -f1 -d'\'':'\'' ; ) | tr -d '\''\n'\''`
 
-	ibaddr | awk '\''{print $2}'\'' > $GID_file
+	QP=`(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | tr - : | cut -f2-4 -d'\'':'\'' ; ) | tr -d '\'':\n'\''`
 
-	( ( cat /tmp/ip ; echo -e '\''\t\t'\'' ; cat /tmp/GID ; echo -e  '\''\t'\'' ; cat /tmp/QP ; echo -e '\''\t'\'' ; cat /tmp/flags ) | tr -d '\''\n'\''  ; echo '\'''\'' ; )
+	GID=`ibaddr | awk '\''{print $2}'\''`
+
+	#output:
+	( printf "%-30s $GID\t\t$QP\t$flags%s\n" "$ip" ;
+		printf "%-30s $GID\t\t$QP\t$flags%s\n" "$ipv6" ; )
+
 	' >> $hostdata_output_file
 
 done < $hostname_input_file

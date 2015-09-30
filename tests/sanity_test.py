@@ -15,6 +15,7 @@ import time
 import json
 import random
 import commands
+import socket
 
 from  pprint   import pprint
 from  optparse import OptionParser
@@ -282,20 +283,20 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
 
     return status
 
-def kcache_ip_lookup(node, active_interface, ip_to_search, entry_type):
+def kcache_ip_lookup(node, active_interface, addr_to_search, entry_type):
 
     status = 0
-    (rc, out) = ssa_tools_utils.execute_on_remote('ip neigh show dev %s %s' % (active_interface, ip_to_search), node)
+    (rc, out) = ssa_tools_utils.execute_on_remote('ip neigh show dev %s %s' % (active_interface, addr_to_search), node)
     if len(out) == 0:
-        print 'ERROR: ip %s not found in node %s cache' % (ip_to_search, node)
+        print 'ERROR: ip %s not found in node %s cache' % (addr_to_search, node)
         status = 2
         return status
     if out.split()[-1] != entry_type:
-        print 'ERROR: ip %s node %s cache is not %s' % (ip_to_search, node, entry_type)
+        print 'ERROR: ip %s node %s cache is not %s' % (addr_to_search, node, entry_type)
         status = 2
     return status
 
-def test_ip (acms, sample_ips):
+def test_ip (acms, sample_ipv4s, sample_ipv6s):
 
     status = 0
 
@@ -310,20 +311,25 @@ def test_ip (acms, sample_ips):
             continue
 
         active_interface = get_active_ib_interface(node)
-        sip = get_node_ip(node, active_interface)
 
-        print 'Testing %s with %d IPs' % (node, len(sample_ips))
+        print 'Testing %s with %d IPv4s, %d IPv6s' % (node, len(sample_ipv4s), len(sample_ipv6s))
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'Before IP test\n', out0
         node_ip = get_node_ip(node, active_interface)
-        print 'Executing kernel and user cache tests on node %s' % (node)
-        for ip in sample_ips:
+        node_ipv6 = get_IPv6_addr(node, active_interface)
 
-            status = test_acm_by_ip_query(node, sip, ip)
+        if node_ipv6 == "-1":
+            status = 2
+            break
+
+        print 'Executing IPv4 kernel and user cache tests on node %s' % (node)
+        for ip in sample_ipv4s:
+
+            status = test_acm_by_ip_query(node, node_ip, ip)
             if status != 0:
                 break
 
-            if ip == node_ip: 
+            if ip == node_ip:
                 print "no need to look for node %s ip in its own cache:" % (node)
                 print "therefore the serach for ip %s is skipped" % (ip)
                 print ''
@@ -336,9 +342,32 @@ def test_ip (acms, sample_ips):
             break
 
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-        print 'After IP test\n', out0
+        print 'After IPv4 test\n', out0
+        print ''
+        print 'Executing IPv6 kernel and user cache tests on node %s' % (node)
 
-    print 'Run on %d nodes, each to %d ips' % (len(acms), len(sample_ips))
+        for ipv6 in sample_ipv6s:
+
+            status = test_acm_by_ip_query(node, node_ipv6, ipv6)
+            if status != 0:
+                break
+
+            if ipv6 == node_ipv6:
+                print "no need to look for node %s ip in its own cache:" % (node)
+                print "therefore the serach for ip %s is skipped" % (ipv6)
+                print ''
+                continue
+            status = kcache_ip_lookup(node, active_interface, ipv6, 'PERMANENT')
+            if status != 0:
+                break
+
+        if status != 0:
+            break
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'After IPv6 test\n', out0
+        print ''
+
+    print 'Run on %d nodes, each to %d IPv4s, %d IPv6s' % (len(acms), len(sample_ipv4s), len(sample_ipv6s))
     print '==================================================================='
     print '========== TEST ACM BY IP COMPLETE (status: %d) ===================' % (status)
     print '==================================================================='
@@ -346,7 +375,7 @@ def test_ip (acms, sample_ips):
     return status
 
 
-def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
+def sanity_test_0 (cores, als, acms, lids, gids, ipv4s, ipv6s, data):
 
     hostname    = commands.getoutput('hostname')
     slid        = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'").rstrip('\n')
@@ -380,13 +409,14 @@ def sanity_test_0 (cores, als, acms, lids, gids, ips, data):
 
     sample_gids = random.sample(gids, min(len(gids), sample_size))
     sample_lids = random.sample(lids, min(len(lids), sample_size))
-    sample_ips = random.sample(ips, min(len(ips), sample_size))
+    sample_ipv4s = random.sample(ipv4s, min(len(ipv4s), sample_size))
+    sample_ipv6s = random.sample(ipv6s, min(len(ipv6s), sample_size))
 
     status = test_acm_by_lid_gid(acms, sample_lids, sample_gids, data)
     if status != 0:
         return status
 
-    status = test_ip(acms, sample_ips)
+    status = test_ip(acms, sample_ipv4s, sample_ipv6s)
     if status != 0:
         return status
 
@@ -598,10 +628,10 @@ def sanity_test_1 (cores, als, acms, data):
 
     return status
 
-def run_tests(cores, als, acms, lids, gids, ips, fabric_data):
+def run_tests(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data):
 
     status = 0
-    status = sanity_test_0(cores, als, acms, lids, gids, ips, fabric_data)
+    status = sanity_test_0(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data)
     if status != 0:
         return status
 
@@ -637,7 +667,27 @@ def main (argv):
     lids    = []
     gids    = []
 
+    ipv4s   = []
+    ipv6s   = []
+
     ips = get_ip_data()
+    for ip in ips:
+        type = 4
+        try:
+            ret = socket.inet_pton(socket.AF_INET, ip)
+        except:
+            type = 6
+            try:
+                ret = socket.inet_pton(socket.AF_INET6, ip)
+            except:
+                type = 0
+        if type == 4:
+            ipv4s.append(ip)
+        elif type == 6:
+           ipv6s.append(ip)
+        else:
+           print 'ERROR: get_ip_data retrieved %s - which is not an ip' % ip
+           return 1
 
     status  = 0
 
@@ -662,7 +712,7 @@ def main (argv):
     if len(cores) != 2 or len(als) != 2 or len(acms) < 2:
         status = 1
     else:
-         status = run_tests(cores, als, acms, lids, gids, ips, fabric_data)
+         status = run_tests(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data)
 
     # close all cached connections
     ssa_tools_utils.execute_on_remote_cleanup()

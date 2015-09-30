@@ -311,7 +311,6 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
             continue
 
         active_interface = get_active_ib_interface(node)
-        sip = get_node_ip(node, active_interface)
 
         print 'Testing %s with %d IPv4s, %d IPv6s' % (node, len(sample_ipv4s), len(sample_ipv6s))
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
@@ -326,7 +325,7 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
         print 'Executing IPv4 kernel and user cache tests on node %s' % (node)
         for ip in sample_ipv4s:
 
-            status = test_acm_by_ip_query(node, sip, ip)
+            status = test_acm_by_ip_query(node, node_ip, ip)
             if status != 0:
                 break
 
@@ -345,9 +344,13 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
         (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
         print 'After IPv4 test\n', out0
         print ''
-        print 'Executing IPv6 kernel cache test on node %s' % (node)
+        print 'Executing IPv6 kernel and user cache tests on node %s' % (node)
 
         for ipv6 in sample_ipv6s:
+
+            status = test_acm_by_ip_query(node, node_ipv6, ipv6)
+            if status != 0:
+                break
 
             if ipv6 == node_ipv6:
                 print "no need to look for node %s ip in its own cache:" % (node)
@@ -360,7 +363,9 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
 
         if status != 0:
             break
-        # no need to execute ib_acme and print when only kernel cache is touched
+        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        print 'After IPv6 test\n', out0
+        print ''
 
     print 'Run on %d nodes, each to %d IPv4s, %d IPv6s' % (len(acms), len(sample_ipv4s), len(sample_ipv6s))
     print '==================================================================='

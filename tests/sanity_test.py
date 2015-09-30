@@ -108,6 +108,23 @@ def get_node_ip(node,node_active_interface):
                                         % (node_active_interface), node)
     return ip
 
+def get_IPv6_addr(node, node_active_interface):
+
+    (_, IPv6_lines) = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep 'inet6'" % (node_active_interface), node)
+    num_lines = IPv6_lines.count('\n')
+    if num_lines > 1: # FIXME: necessary?
+        print 'ERROR: node %s interface %s has more than 1 IPv6 address' % (node, node_active_interface)
+        return -1
+    if num_lines < 1: #FIXME: same
+        print 'ERROR: node %s interface %s has no IPv6 address' % (node, node_active_interface)
+        return "-1"
+
+    (_, IPv6)   = ssa_tools_utils.execute_on_remote("ip address show dev %s | grep 'inet6' \
+                                        | awk '{print $2}'  | cut -f1 -d'/' \
+                                        | tr -d '\n'" \
+                                        % (node_active_interface), node)
+    return IPv6
+
 def get_node_ip_mask(node,node_active_interface):
 
     (_, mask) = ssa_tools_utils.execute_on_remote("ifconfig %s | grep Mask \

@@ -78,9 +78,13 @@
 #
 ##############################################################################
 
+import time
 import datetime
 import commands
 import atexit
+
+# wait timeout used for fabric update propagation
+update_wait = 2
 
 gid_to_type = {}
 
@@ -322,9 +326,13 @@ def generate_ip_update():
 	err_msg = 'ERROR: unable to send SIGHUP to OpenSM'
 	_exec_cmd(cmd, err_msg)
 
+	time.sleep(update_wait)
+
 	cmd = cmd_map['db_query']
 	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
 	_exec_cmd(cmd, err_msg)
+
+	time.sleep(update_wait)
 
 
 def generate_pr_update():

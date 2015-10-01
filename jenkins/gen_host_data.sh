@@ -2,7 +2,7 @@
 
 hostname_input_file="${hostname_input_file:-ssa.hosts}"
 
-hostdata_output_file="${hostdata_output_file:-/etc/rdma/ibssa_hosts.data}"
+hostdata_output_file="${hostdata_output_file:-/usr/local/etc/rdma/ibssa_hosts.data}"
 
 echo ""  | tr -d '\n' > $hostdata_output_file
 

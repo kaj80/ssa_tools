@@ -38,8 +38,6 @@ cat $SSA_HOSTS_ADDR_FILE | while read line; do
 
 		correct_addr=`cat /tmp/my_ipv6`
 
-		has_correct_addr=0
-
 		suffix=/64
 
 		correct_addr=$correct_addr$suffix

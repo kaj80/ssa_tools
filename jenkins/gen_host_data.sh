@@ -12,8 +12,6 @@ while read line; do
 
 	output_directory=/etc/rdma
 
-	ipv6="F"
-
 	mkdir -p $output_directory
 
 	if ibportstate -D 0 1 | grep -q "LinkUp"; then

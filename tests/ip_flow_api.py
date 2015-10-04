@@ -386,5 +386,16 @@ def generate_pr_and_ip_update():
 
 	return gid
 
+def bounce_sm_port():
 
+	sm_gid=_get_master_gid()
+	(lid, port) = get_remote_lid_and_port(_gid_to_lid(sm_port))
+
+	cmd = 'ibportstate ' +  str(lid) + ' ' + str(port) + ' reset'
+	err_msg = 'ERORR: unable to issue ibportstate'
+	_exec_cmd(cmd, err_msg)
+
+	print 'PORT ' + str(lid) + ':' + str(port) + \
+		'was RESET (bounce_sm)'
+	
 _ip_flow_init()

@@ -21,7 +21,8 @@ def compare_epoch_dictionaries(old_dictionary, new_dictionary, epoch_type):
 			      (nt, ng, epoch_type, e_old, e_new)
 
 			if e_new != (e_old + 1):
-				print '-E- Bad %s epoch on %s node (%s)' % (ng, nt)
+				print '-E- Bad %s epoch on %s node (%s)' % \
+					(epoch_type, ng, nt)
 				status = 1
 				break
 		if status != 0:
@@ -38,12 +39,13 @@ def compare_timestamp_dictionaries(old_dictionary, new_dictionary, excluded_type
 			tstamp_old = old_dictionary[nt][ng]
 			tstamp_new = new_dictionary[nt][ng]
 
-			#FIXME - add print??
+			print '-I- %s / %s timestamp: old %ld, new %ld' % \
+				(nt, ng, tstamp_new, tstamp_old)
 
 			if (nt in excluded_types):
 				if tstamp_old != tstamp_new:
-					print "-E- Bad timestamp on %s node (%s - shouldn't update)" \
-						% (ng, nt)
+					print "-E- Bad timestamp on %s node" \
+					      "(%s - shouldn't update)" % (ng, nt)
 					status = 1
 					break
 			else:
@@ -71,40 +73,38 @@ def test_ip_update():
 		print e
 		return 1
 
-	status = compare_epoch_dictionaries(ipv4_epochs, ipv4_epochs_new, 'IPv4')
+	status = compare_epoch_dictionaries(ipv4_epochs, \
+					    ipv4_epochs_new, 'IPv4')
 
 	if status != 0:
 		return status
 
-	status = compare_epoch_dictionaries(ipv6_epochs, ipv6_epochs_new, 'IPv6')
+	print ''
+	status = compare_epoch_dictionaries(ipv6_epochs, \
+					    ipv6_epochs_new, 'IPv6')
 
 	return status
 
 def test_pr_update(): #FIXME
 
-        status = 0
+	status = 0
 
-        try:
-                old_db_epochs = ip_flow_api.get_db_epochs('DB_EPOCH')
+	try:
+		old_db_epochs = ip_flow_api.get_db_epochs('DB_EPOCH')
 
-                acm_gid = ip_flow_api.generate_pr_update()
+		acm_gid = ip_flow_api.generate_pr_update()
 
-                new_db_epochs = ip_flow_api.get_db_epochs('DB_EPOCH')
+		new_db_epochs = ip_flow_api.get_db_epochs('DB_EPOCH')
 
-                ret1 = old_db_epochs['acm_nodes'].pop(str(acm_gid), 0)
-                ret2 = new_db_epochs['acm_nodes'].pop(str(acm_gid), 0)
+		old_db_epochs['acm_nodes'].pop(str(acm_gid), None)
 
-                if ret1 == ret2: #sanity chcek
-                        print 'ERROR in pr_upadte?' #FIXME remove later
-                        return 1
+	except Exception as e:
+		print e
+		return 1
 
-        except Exception as e:
-                print e
-                return 1
-        #TODO compare PR epoch for ACM
-        status = compare_epoch_dictionaries(old_db_epochs, new_db_epochs, 'DB')
+	status = compare_epoch_dictionaries(old_db_epochs, new_db_epochs, 'DB')
 
-        return status
+	return status
 
 def test_sm_handover(): #FIXME
 
@@ -121,8 +121,8 @@ def test_sm_handover(): #FIXME
 		print e
 		return 1
 
-	status = compare_timestamp_dictionaries(old_update_times, new_update_times, \
-						(core_nodes))
+	status = compare_timestamp_dictionaries(old_update_times, \
+						new_update_times, (core_nodes))
 
 	return status
 
@@ -150,9 +150,9 @@ def test_access_failover(): #FIXME
 	status = 0
 
 	try:
-		old_update_times = ip_flow_api.get_last_db_upadte_time()
+		old_update_times = ip_flow_api.get_last_db_update_time()
 
-		#FIXME - add code that makes access fail  here
+		ip_flow_api.trigger_acm_reconnection()
 
 		new_update_times = ip_flow_api.get_last_db_update_time()
 
@@ -160,7 +160,8 @@ def test_access_failover(): #FIXME
 		print e
 		return 1
 
-	status = compare_timestamp_dictionaries(old_update_times, new_update_times, ())
+	status = compare_timestamp_dictionaries(old_update_times, \
+		new_update_times, ('core_nodes', 'distrib_nodes', 'access_nodes'))
 
 	return status
 
@@ -180,19 +181,22 @@ def main(argv): #FIXME
 		sys.exit(1)
 	print '-I- PR update test PASSED\n'
 
-	print '-I- SM handover test START'
-	res = test_sm_handover()
-	if res != 0:
-		print '-E- SM handover test FAILED'
-		sys.exit(1)
-	print '-I- SM handover test PASSED'
+	# to prevent ssadmin stats from returning 'error event'
+	ip_flow_api.generate_pr_and_ip_update()
 
-	print '-I- Distribution failover test START'
-	res = test_distrib_failover()
-	if res != 0:
-		print '-E- Distribution failover test FAILED'
-		sys.exit(1)
-	print '-E- Distribution failover test FAILED'
+#	print '-I- SM handover test START'
+#	res = test_sm_handover()
+#	if res != 0:
+#		print '-E- SM handover test FAILED'
+#		sys.exit(1)
+#	print '-I- SM handover test PASSED'
+#
+#	print '-I- Distribution failover test START'
+#	res = test_distrib_failover()
+#	if res != 0:
+#		print '-E- Distribution failover test FAILED'
+#		sys.exit(1)
+#	print '-E- Distribution failover test PASSED'
 
 	print '-I- Access failover test START'
 	res = test_access_failover()

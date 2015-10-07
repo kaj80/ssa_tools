@@ -84,7 +84,7 @@ import commands
 import atexit
 
 # wait timeout used for fabric update propagation
-update_wait = 2
+update_wait = 7
 
 gid_to_type = {}
 
@@ -159,6 +159,8 @@ def _ip_flow_destroy():
 		      str(port_disabled) + ' enable'
 		err_msg = 'ERROR: unable to enable disabled port'
 		_exec_cmd(cmd, err_msg)
+
+		time.sleep(update_wait)
 
 		print 'PORT ' + str(lid_disabled) + ':' + \
 		      str(port_disabled) + ' was ENABLED'
@@ -287,6 +289,10 @@ def get_db_epochs(epoch_type):
 
 	for e in epochs:
 		e_list = e.split()
+
+		if e_list[0] == 'ERROR:' or e_list[0] == 'ERROR':
+			continue
+
 		gid = e_list[0][:-1]
 		epoch = e_list[2]
 
@@ -365,6 +371,8 @@ def generate_pr_update():
 	err_msg = 'ERROR: unable to issue ibportstate'
 	_exec_cmd(cmd, err_msg)
 
+	time.sleep(update_wait)
+
 	if lid_disabled == 0:
 		lid_disabled = lid
 		port_disabled = port
@@ -374,6 +382,12 @@ def generate_pr_update():
 
 	print 'PORT ' + str(lid) + ':' + str(port) + \
 	      ' was ' + action.upper() + 'D'
+
+	cmd = cmd_map['db_query']
+	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
+	_exec_cmd(cmd, err_msg)
+
+	time.sleep(update_wait)
 
 	return acm_gid
 
@@ -386,16 +400,32 @@ def generate_pr_and_ip_update():
 
 	return gid
 
-def bounce_sm_port():
+def bounce_sm_port():  # FIXME - doesn't work. need to reset core from another host
 
 	sm_gid=_get_master_gid()
-	(lid, port) = get_remote_lid_and_port(_gid_to_lid(sm_port))
-
+	(lid, port) = get_remote_lid_and_port(_gid_to_lid(sm_gid))
+#problematic part starts here
 	cmd = 'ibportstate ' +  str(lid) + ' ' + str(port) + ' reset'
 	err_msg = 'ERORR: unable to issue ibportstate'
 	_exec_cmd(cmd, err_msg)
+#ends here
+	time.sleep(update_wait)
 
 	print 'PORT ' + str(lid) + ':' + str(port) + \
 		'was RESET (bounce_sm)'
-	
+
+def trigger_acm_reconnection():
+
+	cmd = SSADMIN_PREFIX + '/sbin/ssadmin -r --filter=acm rejoin'  #FIXME using rejoin because disconnect doesn't seem to work
+	err_msg = 'ERROR: unable to send disconnect cmd to ACM nodes'
+	_exec_cmd(cmd, err_msg)
+
+	time.sleep(update_wait * 3)
+
+	cmd = cmd_map['db_query']
+	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
+	_exec_cmd(cmd, err_msg)
+
+	time.sleep(update_wait)
+
 _ip_flow_init()

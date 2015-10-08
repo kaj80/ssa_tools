@@ -298,7 +298,7 @@ def get_last_db_update_time():
 		t_list = t.split()
 		gid = t_list[0][:-1]
 		timestamp = _gen_timestamp(t_list[2:])
-		print type(tstamp)
+
 		node_type = node_type_lookup.get(gid_to_type[gid])
 		if node_type != 'None':
 			res[node_type][gid] = timestamp

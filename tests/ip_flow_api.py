@@ -324,7 +324,8 @@ def get_db_epochs(epoch_type):
 	for e in epochs:
 		e_list = e.split()
 
-		if e_list[0] == 'ERROR:' or e_list[0] == 'ERROR':
+		err_list = [ 'ERROR', 'ERROR:', 'BullseyeCoverage' ]
+		if e_list[0] in err_list:
 			continue
 
 		gid = e_list[0][:-1]

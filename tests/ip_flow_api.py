@@ -296,6 +296,11 @@ def get_last_db_update_time():
 
 	for t in times:
 		t_list = t.split()
+
+		err_list = [ 'ERROR', 'ERROR:', 'BullseyeCoverage' ]
+		if t_list[0] in err_list:
+			continue
+
 		gid = t_list[0][:-1]
 		timestamp = _gen_timestamp(t_list[2:])
 

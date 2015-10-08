@@ -1,8 +1,8 @@
 #!/bin/bash
 
 input_files=""
-ip_prefix=${SSA_IP_PREFIX:-"100.0.0."}
-ipv6_prefix=${SSA_IPV6_PREFIX:-"fec0::"}
+ip_prefix=${SSA_IP_PREFIX:-"100.0"}
+ip6_prefix=${SSA_IPV6_PREFIX:-"fec0::"}
 
 for var in "$@"
 do
@@ -18,15 +18,25 @@ if [[ -z $input_files ]]; then
 	exit 0
 fi
 
-rm -f $output_file
-
 cat $input_files | while read line; do
+
+	[ -z "$line" ] && continue
 
         ip_num=$(echo $line | tr -dc '0-9')
 
 	ip_num=${ip_num##0}
 
-	( printf "%-25s $ip_prefix$ip_num\t\t$ipv6_prefix$ip_num%s\n" "$line")
+	if (( $ip_num < 255 )); then
+		rem=0
+		res=$ip_num
+	else
+		rem=$((ip_num % 255))
+		res=$((ip_num / 255))
+	fi
+
+	ip=$ip_prefix.$rem.$res
+
+	( printf "%-25s $ip\t\t$ip6_prefix$ip_num%s\n" "$line")
 done
 
 exit 0

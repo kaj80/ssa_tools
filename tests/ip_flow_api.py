@@ -78,24 +78,13 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 			WIP!!!
-#
-# Method name:        bounce_sm_port() FIXME FIXME
-#
-# Description:        resets the port of the SM node.
-#                     meant to be used to cause SM handover
-#
-#                  CURRENTLY NOT WORKING!!! FIXME
-#
-# ----------------------------------------------------------------------------
-#
 # Method name:        trigger_acm_reconnection()
 #
 # Description:        makes all ACM nodes reconnect to the fabric
 #
 #                     * note 1: some 'sleep' should be taken after execution
 #                               in order to allow SSA fabric to propagate the
-#                               desired change              
+#                               desired change
 #
 #                     * note 2: currently uses ssadmin rejoin command, as
 #                               the disconnect command doesn't seem to
@@ -132,7 +121,9 @@ cmd_map = \
 	{ 'nodeinfo'    : SSADMIN_PREFIX + '/sbin/ssadmin -r nodeinfo --format=short ',
 	  'db_epoch'    : SSADMIN_PREFIX + '/sbin/ssadmin -r stats ',
 	  'last_update' : SSADMIN_PREFIX + '/sbin/ssadmin -r stats LAST_UPDATE_TIME ',
-	  'db_query'    : SSADMIN_PREFIX + '/sbin/ssadmin -r dbquery --filter=acm ' }
+	  'db_query'    : SSADMIN_PREFIX + '/sbin/ssadmin -r dbquery --filter=acm ',
+	  'rejoin'      : SSADMIN_PREFIX + '/sbin/ssadmin -r rejoin --filter=acm'}
+	  #FIXME rejoin should be replaced with disconnect
 
 node_type_lookup = \
 	{ 'Core'         : 'core_nodes',
@@ -165,7 +156,7 @@ def _exec_cmd(cmd, err_msg, check_output = 0):
 def _ip_flow_init():
 	global gid_to_type
 	global file_obj
-	
+
 	file_obj = open(LOGFILE_PATH, 'a')
 	file_obj.write('opening log file\n')
 
@@ -307,7 +298,7 @@ def get_last_db_update_time():
 		t_list = t.split()
 		gid = t_list[0][:-1]
 		timestamp = _gen_timestamp(t_list[2:])
-
+		print type(tstamp)
 		node_type = node_type_lookup.get(gid_to_type[gid])
 		if node_type != 'None':
 			res[node_type][gid] = timestamp
@@ -445,23 +436,9 @@ def generate_pr_and_ip_update():
 
 	return gid
 
-def bounce_sm_port():  # FIXME - doesn't work. need to reset core from another host
-
-	sm_gid=_get_master_gid()
-	(lid, port) = get_remote_lid_and_port(_gid_to_lid(sm_gid))
-#problematic part starts here
-	cmd = 'ibportstate ' +  str(lid) + ' ' + str(port) + ' reset'
-	err_msg = 'ERORR: unable to issue ibportstate'
-	_exec_cmd(cmd, err_msg)
-#ends here
-	time.sleep(update_wait)
-
-	print 'PORT ' + str(lid) + ':' + str(port) + \
-		'was RESET (bounce_sm)'
-
 def trigger_acm_reconnection():
 
-	cmd = SSADMIN_PREFIX + '/sbin/ssadmin -r --filter=acm rejoin'  #FIXME using rejoin because disconnect doesn't seem to work
+	cmd = cmd_map['rejoin'] #FIXME using rejoin because disconnect doesn't seem to work
 	err_msg = 'ERROR: unable to send disconnect cmd to ACM nodes'
 	_exec_cmd(cmd, err_msg)
 

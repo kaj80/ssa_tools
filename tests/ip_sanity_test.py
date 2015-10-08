@@ -30,7 +30,7 @@ def compare_epoch_dictionaries(old_dictionary, new_dictionary, epoch_type):
 
 	return status
 
-def compare_timestamp_dictionaries(old_dictionary, new_dictionary, excluded_types): #FIXME
+def compare_timestamp_dictionaries(old_dictionary, new_dictionary, excluded_types):
 
 	status = 0
 
@@ -42,7 +42,7 @@ def compare_timestamp_dictionaries(old_dictionary, new_dictionary, excluded_type
 			print '-I- %s / %s timestamp: old %ld, new %ld' % \
 				(nt, ng, tstamp_old, tstamp_new)
 
-			if (nt in excluded_types):
+			if nt in excluded_types:
 				if tstamp_old != tstamp_new:
 					print "-E- Bad timestamp on %s node" \
 					      "(%s - shouldn't update)" % (ng, nt)
@@ -85,7 +85,7 @@ def test_ip_update():
 
 	return status
 
-def test_pr_update(): #FIXME
+def test_pr_update():
 
 	status = 0
 
@@ -106,46 +106,7 @@ def test_pr_update(): #FIXME
 
 	return status
 
-def test_sm_handover(): #FIXME
-
-	status = 0
-
-	try:
-		old_update_times = ip_flow_api.get_last_db_update_time()
-
-		ip_flow_api.bounce_sm_port()
-
-		new_update_times = ip_flow_api.get_last_db_update_time()
-
-	except Exception as e:
-		print e
-		return 1
-
-	status = compare_timestamp_dictionaries(old_update_times, \
-						new_update_times, (core_nodes))
-
-	return status
-
-def test_distrib_failover(): #FIXME
-
-	status = 0
-
-	try:
-		old_db_epochs = ip_flow_api.get_db_epochs('DB_EPOCH')
-
-		#FIXME - add code that makes distribution fail
-
-		new_db_epochs = ip_flow_api.get_db_epochs('DB_EPOCH')
-
-	except Exception as e:
-		print e
-		return 1
-
-	status = compare_epoch_dictionaries(old_db_epochs, new_db_epochs, 'DB')
-
-	return status
-
-def test_access_failover(): #FIXME
+def test_access_failover():
 
 	status = 0
 
@@ -165,7 +126,7 @@ def test_access_failover(): #FIXME
 
 	return status
 
-def main(argv): #FIXME
+def main(argv):
 
 	print '-I- IP update test START'
 	res = test_ip_update()
@@ -184,20 +145,6 @@ def main(argv): #FIXME
 	# to prevent ssadmin stats from returning 'error event'
 	ip_flow_api.generate_pr_and_ip_update()
 
-#	print '-I- SM handover test START'
-#	res = test_sm_handover()
-#	if res != 0:
-#		print '-E- SM handover test FAILED'
-#		sys.exit(1)
-#	print '-I- SM handover test PASSED'
-#
-#	print '-I- Distribution failover test START'
-#	res = test_distrib_failover()
-#	if res != 0:
-#		print '-E- Distribution failover test FAILED'
-#		sys.exit(1)
-#	print '-E- Distribution failover test PASSED'
-
 	print '-I- Access failover test START'
 	res = test_access_failover()
 	if res != 0:
@@ -205,7 +152,7 @@ def main(argv): #FIXME
 		sys.exit(1)
 	print '-I- Access failover test PASSED'
 
-	#FIXME: add ret value?
+	sys.exit(1)
 
 if __name__ == "__main__":
         main(sys.argv[1:])

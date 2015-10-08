@@ -76,6 +76,31 @@
 #                             in order to allow SSA fabric to propagate the
 #                             desired change
 #
+# ----------------------------------------------------------------------------
+#
+# 			WIP!!!
+#
+# Method name:        bounce_sm_port() FIXME FIXME
+#
+# Description:        resets the port of the SM node.
+#                     meant to be used to cause SM handover
+#
+#                  CURRENTLY NOT WORKING!!! FIXME
+#
+# ----------------------------------------------------------------------------
+#
+# Method name:        trigger_acm_reconnection()
+#
+# Description:        makes all ACM nodes reconnect to the fabric
+#
+#                     * note 1: some 'sleep' should be taken after execution
+#                               in order to allow SSA fabric to propagate the
+#                               desired change              
+#
+#                     * note 2: currently uses ssadmin rejoin command, as
+#                               the disconnect command doesn't seem to
+#                               be working #FIXME FIXME
+#
 ##############################################################################
 
 import time
@@ -98,6 +123,11 @@ port_disabled = 0
 SSADMIN_PREFIX = '/usr/local'
 HOST_ADDR_FILE = SSADMIN_PREFIX + '/etc/rdma/ibssa_hosts.data'
 
+LOGFILE_PREFIX = '/var/log'
+LOGFILE_PATH = LOGFILE_PREFIX + '/ip_flow_api.log'
+
+file_obj = None
+
 cmd_map = \
 	{ 'nodeinfo'    : SSADMIN_PREFIX + '/sbin/ssadmin -r nodeinfo --format=short ',
 	  'db_epoch'    : SSADMIN_PREFIX + '/sbin/ssadmin -r stats ',
@@ -117,19 +147,27 @@ class IpException(Exception):
 
 def _exec_cmd(cmd, err_msg, check_output = 0):
 
+	file_obj.write('_exec_cmd : executing cmd: ' + cmd + '\n')
+
 	(status, output) = commands.getstatusoutput(cmd)
 	if status != 0:
+		file_obj.write('_exec_cmd : ' + err_msg + '\n')
 		raise IpException(err_msg)
 
 	output_lines = output.split('\n')
 
 	if check_output != 0 and len(output_lines) == 0:
+		file_obj.write('_exec_cmd : ' + err_msg + '\n')
 		raise IpException(err_msg)
 
 	return output_lines
 
 def _ip_flow_init():
 	global gid_to_type
+	global file_obj
+	
+	file_obj = open(LOGFILE_PATH, 'a')
+	file_obj.write('opening log file\n')
 
 	err_msg = 'ERROR: unable to get SSA fabric node info'
 	fabric = _exec_cmd(cmd_map['nodeinfo'], err_msg, 1)
@@ -162,9 +200,14 @@ def _ip_flow_destroy():
 
 		time.sleep(update_wait)
 
-		print 'PORT ' + str(lid_disabled) + ':' + \
+		print_str =  'PORT ' + str(lid_disabled) + ':' + \
 		      str(port_disabled) + ' was ENABLED'
 
+		print print_str
+		file_obj.write(print_str + '\n')
+
+	file_obj.write('closing log file\n')
+	file_obj.close()
 
 #
 # input --> output example:
@@ -380,8 +423,10 @@ def generate_pr_update():
 		lid_disabled = 0
 		port_disabled = 0
 
-	print 'PORT ' + str(lid) + ':' + str(port) + \
+	print_str = 'PORT ' + str(lid) + ':' + str(port) + \
 	      ' was ' + action.upper() + 'D'
+	print print_str
+	file_obj.write(print_str + '\n')
 
 	cmd = cmd_map['db_query']
 	err_msg = 'ERROR: unable to send dbquery to ACM nodes'

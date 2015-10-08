@@ -40,7 +40,7 @@ def compare_timestamp_dictionaries(old_dictionary, new_dictionary, excluded_type
 			tstamp_new = new_dictionary[nt][ng]
 
 			print '-I- %s / %s timestamp: old %ld, new %ld' % \
-				(nt, ng, tstamp_new, tstamp_old)
+				(nt, ng, tstamp_old, tstamp_new)
 
 			if (nt in excluded_types):
 				if tstamp_old != tstamp_new:

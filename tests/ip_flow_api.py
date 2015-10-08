@@ -369,11 +369,7 @@ def generate_ip_update():
 
 	time.sleep(update_wait)
 
-	cmd = cmd_map['db_query']
-	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
-	_exec_cmd(cmd, err_msg)
-
-	time.sleep(update_wait)
+	acm_db_query()
 
 
 def generate_pr_update():
@@ -420,11 +416,7 @@ def generate_pr_update():
 	print print_str
 	file_obj.write(print_str + '\n')
 
-	cmd = cmd_map['db_query']
-	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
-	_exec_cmd(cmd, err_msg)
-
-	time.sleep(update_wait)
+	acm_db_query()
 
 	return acm_gid
 
@@ -445,10 +437,15 @@ def trigger_acm_reconnection():
 
 	time.sleep(update_wait * 3)
 
+	acm_db_query()
+
+def acm_db_query():
+
 	cmd = cmd_map['db_query']
 	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
 	_exec_cmd(cmd, err_msg)
 
 	time.sleep(update_wait)
+
 
 _ip_flow_init()

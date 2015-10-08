@@ -76,6 +76,20 @@
 #                             in order to allow SSA fabric to propagate the
 #                             desired change
 #
+# ----------------------------------------------------------------------------
+#
+# Method name:        trigger_acm_reconnection()
+#
+# Description:        makes all ACM nodes reconnect to the fabric
+#
+#                     * note 1: some 'sleep' should be taken after execution
+#                               in order to allow SSA fabric to propagate the
+#                               desired change
+#
+#                     * note 2: currently uses ssadmin rejoin command, as
+#                               the disconnect command doesn't seem to
+#                               be working #FIXME FIXME
+#
 ##############################################################################
 
 import time
@@ -84,7 +98,7 @@ import commands
 import atexit
 
 # wait timeout used for fabric update propagation
-update_wait = 2
+update_wait = 7
 
 gid_to_type = {}
 
@@ -98,11 +112,18 @@ port_disabled = 0
 SSADMIN_PREFIX = '/usr/local'
 HOST_ADDR_FILE = SSADMIN_PREFIX + '/etc/rdma/ibssa_hosts.data'
 
+LOGFILE_PREFIX = '/var/log'
+LOGFILE_PATH = LOGFILE_PREFIX + '/ip_flow_api.log'
+
+file_obj = None
+
 cmd_map = \
 	{ 'nodeinfo'    : SSADMIN_PREFIX + '/sbin/ssadmin -r nodeinfo --format=short ',
 	  'db_epoch'    : SSADMIN_PREFIX + '/sbin/ssadmin -r stats ',
 	  'last_update' : SSADMIN_PREFIX + '/sbin/ssadmin -r stats LAST_UPDATE_TIME ',
-	  'db_query'    : SSADMIN_PREFIX + '/sbin/ssadmin -r dbquery --filter=acm ' }
+	  'db_query'    : SSADMIN_PREFIX + '/sbin/ssadmin -r dbquery --filter=acm ',
+	  'rejoin'      : SSADMIN_PREFIX + '/sbin/ssadmin -r rejoin --filter=acm'}
+	  #FIXME rejoin should be replaced with disconnect
 
 node_type_lookup = \
 	{ 'Core'         : 'core_nodes',
@@ -117,19 +138,27 @@ class IpException(Exception):
 
 def _exec_cmd(cmd, err_msg, check_output = 0):
 
+	file_obj.write('_exec_cmd : executing cmd: ' + cmd + '\n')
+
 	(status, output) = commands.getstatusoutput(cmd)
 	if status != 0:
+		file_obj.write('_exec_cmd : ' + err_msg + '\n')
 		raise IpException(err_msg)
 
 	output_lines = output.split('\n')
 
 	if check_output != 0 and len(output_lines) == 0:
+		file_obj.write('_exec_cmd : ' + err_msg + '\n')
 		raise IpException(err_msg)
 
 	return output_lines
 
 def _ip_flow_init():
 	global gid_to_type
+	global file_obj
+
+	file_obj = open(LOGFILE_PATH, 'a')
+	file_obj.write('opening log file\n')
 
 	err_msg = 'ERROR: unable to get SSA fabric node info'
 	fabric = _exec_cmd(cmd_map['nodeinfo'], err_msg, 1)
@@ -160,9 +189,16 @@ def _ip_flow_destroy():
 		err_msg = 'ERROR: unable to enable disabled port'
 		_exec_cmd(cmd, err_msg)
 
-		print 'PORT ' + str(lid_disabled) + ':' + \
+		time.sleep(update_wait)
+
+		print_str =  'PORT ' + str(lid_disabled) + ':' + \
 		      str(port_disabled) + ' was ENABLED'
 
+		print print_str
+		file_obj.write(print_str + '\n')
+
+	file_obj.write('closing log file\n')
+	file_obj.close()
 
 #
 # input --> output example:
@@ -262,7 +298,7 @@ def get_last_db_update_time():
 		t_list = t.split()
 		gid = t_list[0][:-1]
 		timestamp = _gen_timestamp(t_list[2:])
-
+		print type(tstamp)
 		node_type = node_type_lookup.get(gid_to_type[gid])
 		if node_type != 'None':
 			res[node_type][gid] = timestamp
@@ -287,6 +323,10 @@ def get_db_epochs(epoch_type):
 
 	for e in epochs:
 		e_list = e.split()
+
+		if e_list[0] == 'ERROR:' or e_list[0] == 'ERROR':
+			continue
+
 		gid = e_list[0][:-1]
 		epoch = e_list[2]
 
@@ -365,6 +405,8 @@ def generate_pr_update():
 	err_msg = 'ERROR: unable to issue ibportstate'
 	_exec_cmd(cmd, err_msg)
 
+	time.sleep(update_wait)
+
 	if lid_disabled == 0:
 		lid_disabled = lid
 		port_disabled = port
@@ -372,8 +414,16 @@ def generate_pr_update():
 		lid_disabled = 0
 		port_disabled = 0
 
-	print 'PORT ' + str(lid) + ':' + str(port) + \
+	print_str = 'PORT ' + str(lid) + ':' + str(port) + \
 	      ' was ' + action.upper() + 'D'
+	print print_str
+	file_obj.write(print_str + '\n')
+
+	cmd = cmd_map['db_query']
+	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
+	_exec_cmd(cmd, err_msg)
+
+	time.sleep(update_wait)
 
 	return acm_gid
 
@@ -386,5 +436,18 @@ def generate_pr_and_ip_update():
 
 	return gid
 
+def trigger_acm_reconnection():
+
+	cmd = cmd_map['rejoin'] #FIXME using rejoin because disconnect doesn't seem to work
+	err_msg = 'ERROR: unable to send disconnect cmd to ACM nodes'
+	_exec_cmd(cmd, err_msg)
+
+	time.sleep(update_wait * 3)
+
+	cmd = cmd_map['db_query']
+	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
+	_exec_cmd(cmd, err_msg)
+
+	time.sleep(update_wait)
 
 _ip_flow_init()

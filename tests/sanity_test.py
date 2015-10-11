@@ -31,7 +31,7 @@ route_cache_count_index = -1
 addr_cache_count_index = -3
 sample_size     = 5
 # assumes default file location and name:
-CORE_PRELOAD_FILE_PATH = '/etc/rdma/ibssa_hosts.data'
+CORE_PRELOAD_FILE_PATH = '/usr/local/etc/rdma/ibssa_hosts.data'
 ALT_NODE_IP = '113.0.0.113'
 ALT_NODE_NETMASK = '255.255.0.0' # currently - no change
 ##############################################################

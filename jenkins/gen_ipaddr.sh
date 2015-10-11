@@ -22,9 +22,7 @@ cat $input_files | while read line; do
 
 	[ -z "$line" ] && continue
 
-        ip_num=$(echo $line | tr -dc '0-9')
-
-	ip_num=${ip_num##0}
+        ip_num=$(echo $line | tr -dc '0-9' | sed 's/^0*//')
 
 	if (( $ip_num < 255 )); then
 		rem=0

@@ -154,6 +154,9 @@ def _exec_cmd(cmd, err_msg, check_output = 0):
 	return output_lines
 
 def _ip_flow_init():
+
+	time.sleep(update_wait * 2.5)
+
 	global gid_to_type
 	global file_obj
 

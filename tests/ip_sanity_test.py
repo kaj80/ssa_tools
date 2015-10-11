@@ -166,6 +166,8 @@ def test_access_failover():
 
 def main(argv):
 
+	print 'Starting IP sanity test\n'
+
 	print 'performing initial DB query'
 	ip_flow_api.acm_db_query()
 

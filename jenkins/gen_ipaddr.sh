@@ -27,6 +27,9 @@ cat $input_files | while read line; do
 	if (( $ip_num < 255 )); then
 		rem=0
 		res=$ip_num
+        elif (( $ip_num == 255 )); then
+                rem=1
+		res=0
 	else
 		rem=$((ip_num % 255))
 		res=$((ip_num / 255))

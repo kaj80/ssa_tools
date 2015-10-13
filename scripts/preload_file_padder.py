@@ -7,9 +7,8 @@
 # and the expected size of this addresses
 
 import sys
+import time
 
-PRELOAD_FILE_PREFIX = '/usr/local/etc/rdma/'
-PRELOAD_FILE_PATH = PRELOAD_FILE_PREFIX + 'ibssa_hosts.data'
 GID = 'fe80::2:c902:26:31d9'
 QP = '0x000048'
 flags = '0x80'
@@ -47,11 +46,17 @@ def inc_ipv6_arr():
 
 def main (argv):
 
+	time_str = time.strftime("%H:%M:%S %d %b %Y")
+
 	num = int(argv[0])
 	if num > 65024:
 		print 'ERROR: size is to large.\ninput must be smaller than 65025\n'
 		return
 	size = (float(num * 72)) / 1024
+	print ('# %d additional lines added by preload_file_padder.py on ' \
+		% num + time_str)
+	print '# The size of an IPv4 record is 32 bytes'
+	print '# The size of an IPv6 record is 40 bytes'
 	print '# Expected total size of additional addresses is %.3fKB' % size
 
 	for i in range(num):
@@ -62,14 +67,9 @@ def main (argv):
 		ipv6_addr = 'fec0::' + ipv6_arr_str()
 		print '%-30s %s\t\t%s\t%s' % (ipv6_addr, GID, QP, flags)
 		inc_ipv6_arr()
+	print ('# end of additional lines added by preload_file_padder.py on ' \
+		+ time_str)
 	return
-
-def main2 (argv):
-
-	for i in range(50000):
-		string = '100.0.' + str(ipv4_arr[0]) + '.' + str(ipv4_arr[1])
-		print string
-		inc_ipv4_arr()
 
 if __name__ == "__main__":
         main(sys.argv[1:])

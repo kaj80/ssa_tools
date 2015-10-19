@@ -134,18 +134,31 @@ def get_node_ip_mask(node,node_active_interface):
 
     return mask
 
+
+def execute_ib_acme_query(addr_format, dest, src, additional_flags, node):
+
+    str_to_exec = ib_acme + ' -f ' + addr_format + ' -d ' + str(dest) + \
+                  ' -s ' + str(src) + ' ' + additional_flags
+
+    return ssa_tools_utils.execute_on_remote(str_to_exec, node)
+
+def execute_ib_acme_performance(node):
+
+    str_to_exec = ib_acme + ' -P '
+    return ssa_tools_utils.execute_on_remote(str_to_exec, node)
+
 def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
 
     status = 0
 
     if initial_query == 1:
         print 'Executing initial ib_acme query on %s (lid %s) node' % (node, slid)
-        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c' % (ib_acme, dlid, slid), node)
+        (rc, out) = execute_ib_acme_query('l', dlid, slid, '-c', node)
         time.sleep(10)
 
     print '%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node
-    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, dlid, slid), node)
+    (rc, out0) = execute_ib_acme_performance(node)
+    (rc, out) = execute_ib_acme_query('l', dlid, slid, '-c -v', node)
     # print out
 
     if out.find('failed') >= 0 and out.find('success') < 0:
@@ -155,7 +168,7 @@ def test_acm_by_lid_query (node, slid, dlid, initial_query = 0, print_err = 1):
             print o
         status = 1
 
-    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    (rc, out1) = execute_ib_acme_performance(node)
 
     ret = compare_outs(out0, out1, route_cache_count_index)
     if ret == 0:
@@ -178,12 +191,12 @@ def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
 
     if initial_query == 1:
         print 'Executing initial ib_acme query on %s (gid %s) node' % (node, sgid)
-        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c' % (ib_acme, dgid, sgid), node)
+        (rc, out) = execute_ib_acme_query('g', dgid, sgid, '-c', node)
         time.sleep(10)
 
     print '%s#  %s -f g -d %s -s %s -c -v' % (node, ib_acme, dgid, sgid)
-    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
-    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, dgid, sgid), node)
+    (rc, out0) = execute_ib_acme_performance(node)
+    (rc, out) = execute_ib_acme_query('g', dgid, sgid, '-c -v', node)
     # print out
 
     if out.find('failed') >= 0 and out.find('success') < 0:
@@ -191,7 +204,7 @@ def test_acm_by_gid_query (node, sgid, dgid, initial_query = 0, print_err = 1):
             print 'error. acm on %s failed (gid test)' % node
         status = 1
 
-    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+    (rc, out1) = execute_ib_acme_performance(node)
     ret = compare_outs(out0, out1, route_cache_count_index)
     if ret == 0:
         if print_err == 1:
@@ -216,7 +229,7 @@ def test_acm_by_lid_gid (acms, sample_lids, sample_gids, data):
         slid = data[node][LID]
 
         print 'Testing %s with %d LIDs' % (node, len(sample_lids))
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        (rc, out0) = execute_ib_acme_performance(node)
         print 'Before LID test', out0
 
         for lid in sample_lids:
@@ -224,7 +237,7 @@ def test_acm_by_lid_gid (acms, sample_lids, sample_gids, data):
             if status != 0:
                 break
 
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        (rc, out0) = execute_ib_acme_performance(node)
         print 'After LID test\n', out0
 
 
@@ -243,7 +256,7 @@ def test_acm_by_lid_gid (acms, sample_lids, sample_gids, data):
         if status != 0:
             break
 
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        (rc, out0) = execute_ib_acme_performance(node)
         print 'After GID test\n', out0
 
     print 'Run on %d nodes, each to %d lids and %d gids' % (len(acms), len(sample_lids), len(sample_gids))
@@ -260,12 +273,12 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
 
     if initial_query == 1:
         print 'Executing initial ib_acme query on %s (ip %s) node' % (node, sip)
-        (rc, out) = ssa_tools_utils.execute_on_remote('%s -f i -d %s -s %s -c' % (ib_acme, dip, sip), node)
+        (rc, out) = execute_ib_acme_query('i', dip, sip, '-c', node)
         time.sleep(10)
 
     print '%s -f i -d %s -s %s -c -v' % (ib_acme, dip, sip), node
-    (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' %ib_acme, node)
-    (rc, out) = ssa_tools_utils.execute_on_remote('%s -f i -d %s -s %s -c -v' % (ib_acme, dip, sip), node)
+    (rc, out0) = execute_ib_acme_performance(node)
+    (rc, out) = execute_ib_acme_query('i', dip, sip, '-c -v', node)
     # print_out
 
     if out.find('failed') >= 0 and out.find('success') < 0:
@@ -273,7 +286,7 @@ def test_acm_by_ip_query (node, sip, dip, initial_query = 0, print_err = 1):
             print 'ERROR. ACM on %s failed' % node
         status = 1
 
-    (rc, out1) = ssa_tools_utils.execute_on_remote('%s -P' % ib_acme, node)
+    (rc, out1) = execute_ib_acme_performance(node)
 
     ret = compare_outs(out0, out1, addr_cache_count_index)
     if ret == 0:
@@ -313,7 +326,7 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
         active_interface = get_active_ib_interface(node)
 
         print 'Testing %s with %d IPv4s, %d IPv6s' % (node, len(sample_ipv4s), len(sample_ipv6s))
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        (rc, out0) = execute_ib_acme_performance(node)
         print 'Before IP test\n', out0
         node_ip = get_node_ip(node, active_interface)
         node_ipv6 = get_IPv6_addr(node, active_interface)
@@ -341,7 +354,7 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
         if status != 0:
             break
 
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        (rc, out0) = execute_ib_acme_performance(node)
         print 'After IPv4 test\n', out0
         print ''
         print 'Executing IPv6 kernel and user cache tests on node %s' % (node)
@@ -363,7 +376,7 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
 
         if status != 0:
             break
-        (rc, out0) = ssa_tools_utils.execute_on_remote('%s -P ' % ib_acme, node)
+        (rc, out0) = execute_ib_acme_performance(node)
         print 'After IPv6 test\n', out0
         print ''
 
@@ -402,8 +415,8 @@ def sanity_test_0 (cores, als, acms, lids, gids, ipv4s, ipv6s, data):
         (_, sgid)   = ssa_tools_utils.execute_on_remote("/usr/sbin/ibaddr |awk '{print $2}'", node)
         slid        = data[node][LID]
 
-        (_, _)      = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, osmgid, sgid), node)
-        (_, _)      = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, osmlid, slid), node)
+        (_, _)      = execute_ib_acme_query('g', osmgid, sgid, '-c -v', node)
+        (_, _)      = execute_ib_acme_query('l', osmlid, slid, '-c -v', node)
         time.sleep(10)
 
 
@@ -447,7 +460,7 @@ def test_mod_flow(acms, data, changed_node, old_ip, new_ip):
     for node in acms:
         node_lid = data[node][LID]
         node_active_interface = get_active_ib_interface(node)
-        (_,_) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, node_lid, node_lid), node)
+        (_,_) = execute_ib_acme_query('l', node_lid, node_lid, '-c -v', node)
         status = kcache_ip_lookup(node,node_active_interface,new_ip,'PERMANENT')
         if status != 0:
             break

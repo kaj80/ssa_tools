@@ -85,7 +85,7 @@ elif [ $install_type == "MOFED" ]; then
 			   --define "configure_options --with-fca=/opt/mellanox/fca \
 						       --with-hcoll=/opt/mellanox/hcoll \
 						       --with-mxm=/opt/mellanox/mxm \
-						       --with-knem=/opt/knem-1.1.2.90mlnx \
+						       --with-knem=/opt/knem-1.1.2.90mlnx1 \
 						       --with-platform=contrib/platform/mellanox/optimized $extra_conf " \
 			   --define 'use_default_rpm_opt_flags 1' $srpm
 	rc=$?

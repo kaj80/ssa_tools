@@ -90,6 +90,13 @@
 #                               the disconnect command doesn't seem to
 #                               be working #FIXME FIXME
 #
+# ----------------------------------------------------------------------------
+#
+# Method name:	      acm_db_query()
+#
+# Description:	      Sends db query to ACM nodes in the fabric,
+#		      then sleeps a while to let information propagates
+#
 ##############################################################################
 
 import time
@@ -154,11 +161,14 @@ def _exec_cmd(cmd, err_msg, check_output = 0):
 	return output_lines
 
 def _ip_flow_init():
+
+	time.sleep(update_wait * 2.5)
+
 	global gid_to_type
 	global file_obj
 
 	file_obj = open(LOGFILE_PATH, 'a')
-	file_obj.write('opening log file\n')
+	file_obj.write('_ip_flow_init: opening log file ' + time.strftime("%H:%M:%S %d %b %Y") + '\n')
 
 	err_msg = 'ERROR: unable to get SSA fabric node info'
 	fabric = _exec_cmd(cmd_map['nodeinfo'], err_msg, 1)
@@ -195,9 +205,9 @@ def _ip_flow_destroy():
 		      str(port_disabled) + ' was ENABLED'
 
 		print print_str
-		file_obj.write(print_str + '\n')
+		file_obj.write('_ip_flow_destroy: ' + print_str + '\n')
 
-	file_obj.write('closing log file\n')
+	file_obj.write('_ip_flow_destroy: closing log file\n\n')
 	file_obj.close()
 
 #
@@ -283,6 +293,9 @@ def get_remote_lid_and_port(lid):
 
 
 def get_last_db_update_time():
+
+	file_obj.write('get_last_db_update_time: entered function\n')
+
 	res = {}
 
 	res['core_nodes'] = {}
@@ -311,10 +324,15 @@ def get_last_db_update_time():
 			print 'WARN: invalid gid type detected: (gid, type)' \
 			      ' = (%s, %s)' % (gid, gid_to_type[gid])
 
+	file_obj.write('get_last_db_update_time: exiting function\n')
+
 	return res
 
 
 def get_db_epochs(epoch_type):
+
+	file_obj.write('get_db_epochs: entered function\n')
+
 	res = {}
 
 	res['core_nodes'] = {}
@@ -343,11 +361,15 @@ def get_db_epochs(epoch_type):
 			print 'WARN: invalid gid type detected: (gid, type) =' \
 			      ' (%s, %s)' % (gid, gid_to_type[gid])
 
+	file_obj.write('get_db_epochs: exiting function\n')
+
 	return res
 
 
 def generate_ip_update():
 	global ip_was_set
+
+	file_obj.write('generate_ip_update: started update generation\n')
 
 	master_sm_gid = _get_master_gid()
 	if master_sm_gid == '':
@@ -376,10 +398,14 @@ def generate_ip_update():
 
 	acm_db_query()
 
+	file_obj.write('generate_ip_update: finished update generation\n')
+
 
 def generate_pr_update():
 	global lid_disabled
 	global port_disabled
+
+	file_obj.write('generate_pr_update: started update generation\n')
 
 	cmd = cmd_map['nodeinfo'] + '--filter=acm'
 	err_msg = 'ERROR: unable to get list of ACMs'
@@ -419,9 +445,11 @@ def generate_pr_update():
 	print_str = 'PORT ' + str(lid) + ':' + str(port) + \
 	      ' was ' + action.upper() + 'D'
 	print print_str
-	file_obj.write(print_str + '\n')
+	file_obj.write('generate_pr_update: ' + print_str + '\n')
 
 	acm_db_query()
+
+	file_obj.write('generate_pr_update: finished update generation\n')
 
 	return acm_gid
 
@@ -436,6 +464,8 @@ def generate_pr_and_ip_update():
 
 def trigger_acm_reconnection():
 
+	file_obj.write('trigger_acm_reconnection: started reconnection\n')
+
 	cmd = cmd_map['rejoin'] #FIXME using rejoin because disconnect doesn't seem to work
 	err_msg = 'ERROR: unable to send disconnect cmd to ACM nodes'
 	_exec_cmd(cmd, err_msg)
@@ -444,13 +474,19 @@ def trigger_acm_reconnection():
 
 	acm_db_query()
 
+	file_obj.write('trigger_acm_reconnection: finished reconnection\n')
+
 def acm_db_query():
+
+	file_obj.write('acm_db_query: entered function\n')
 
 	cmd = cmd_map['db_query']
 	err_msg = 'ERROR: unable to send dbquery to ACM nodes'
 	_exec_cmd(cmd, err_msg)
 
 	time.sleep(update_wait)
+
+	file_obj.write('acm_db_query: exiting function\n')
 
 
 _ip_flow_init()

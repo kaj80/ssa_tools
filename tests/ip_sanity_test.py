@@ -166,6 +166,8 @@ def test_access_failover():
 
 def main(argv):
 
+	print 'Starting IP sanity test\n'
+
 	print 'performing initial DB query'
 	ip_flow_api.acm_db_query()
 
@@ -194,7 +196,7 @@ def main(argv):
 		sys.exit(1)
 	print '-I- Access failover test PASSED'
 
-	sys.exit(1)
+	sys.exit(0)
 
 if __name__ == "__main__":
         main(sys.argv[1:])

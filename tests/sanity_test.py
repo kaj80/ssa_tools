@@ -75,10 +75,9 @@ def get_data (topology):
     return data
 
 def get_ip_data ():
-    # takes ip data from the file used for data preloading
-    file_location = '/etc/rdma'
-    file_name = 'ibssa_hosts.data'
-    ip_data_str = commands.getoutput("cat %s/%s | awk '{print $1}'" % (file_location,file_name))
+
+    ip_data_str = commands.getoutput("cat %s | awk '{print $1}'" % (CORE_PRELOAD_FILE_PATH))
+
     return ip_data_str.split()
 
 def compare_outs (out0, out1, index_to_compare):

@@ -12,7 +12,7 @@ from optparse import OptionParser
 
 
 timestamp = time.strftime("%Y%m%d_%H%M%S")
-shared_dir = '/mswg/projects/osm/kodiak/mlnx/logs'
+shared_dir = '/proj/SSA/Mellanox/logs/'
 
 dict_global = {}
 dict_global['topology'] = None

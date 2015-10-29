@@ -31,7 +31,7 @@ route_cache_count_index = -1
 addr_cache_count_index = -3
 sample_size     = 5
 # assumes default file location and name:
-CORE_PRELOAD_FILE_PATH = '/etc/rdma/ibssa_hosts.data'
+CORE_PRELOAD_FILE_PATH = '/usr/local/etc/rdma/ibssa_hosts.data'
 ALT_NODE_IP = '113.0.0.113'
 ALT_NODE_NETMASK = '255.255.0.0' # currently - no change
 ##############################################################
@@ -75,10 +75,7 @@ def get_data (topology):
     return data
 
 def get_ip_data ():
-    # takes ip data from the file used for data preloading
-    file_location = '/etc/rdma'
-    file_name = 'ibssa_hosts.data'
-    ip_data_str = commands.getoutput("cat %s/%s | awk '{print $1}'" % (file_location,file_name))
+    ip_data_str = commands.getoutput("sudo cat %s | awk '{print $1}'" % (CORE_PRELOAD_FILE_PATH))
     return ip_data_str.split()
 
 def compare_outs (out0, out1, index_to_compare):
@@ -377,35 +374,9 @@ def test_ip (acms, sample_ipv4s, sample_ipv6s):
 
 def sanity_test_0 (cores, als, acms, lids, gids, ipv4s, ipv6s, data):
 
-    hostname    = commands.getoutput('hostname')
-    slid        = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'").rstrip('\n')
-    osmlid      = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'").rstrip('\n')
-    osmgid      = commands.getoutput("/usr/sbin/saquery --src-to-dst %s:%s|grep dgid" % ( slid, osmlid)).split('.')[-1]
-
-    if len(osmlid.split() + slid.split() + osmgid.split() + hostname.split()) != 4 :
-            print 'Failed to get basic info'
-            print "/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'\n%s" % osmlid
-            print "/usr/sbin/ibstat |grep -a5 Act|grep Base|awk '{print $NF}'\n%s" % slid
-            print "/usr/sbin/saquery --src-to-dst %s:%s|grep dgid\n%s" % ( slid, osmlid, osmgid)
-            print "hostname\n%s" % hostname
-            sys.exit(1)
-
     print '==================================================================='
     print '========================= SANITY TEST 0 ==========================='
     print '==================================================================='
-
-    # Initial ib_acme query in order to make sure there was PRDB update
-    for node in acms:
-        if node == '':
-            continue
-
-        (_, sgid)   = ssa_tools_utils.execute_on_remote("/usr/sbin/ibaddr |awk '{print $2}'", node)
-        slid        = data[node][LID]
-
-        (_, _)      = ssa_tools_utils.execute_on_remote('%s -f g -d %s -s %s -c -v' % (ib_acme, osmgid, sgid), node)
-        (_, _)      = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, osmlid, slid), node)
-        time.sleep(10)
-
 
     sample_gids = random.sample(gids, min(len(gids), sample_size))
     sample_lids = random.sample(lids, min(len(lids), sample_size))
@@ -426,10 +397,10 @@ def sanity_test_0 (cores, als, acms, lids, gids, ipv4s, ipv6s, data):
 
     return status
 
-def change_node_ip(node, new_ip, new_netmask):
+def change_node_ip(node, ip_new, netmask_new):
 
-    active_interface = get_active_ib_interface(node)
-    (rc, ret) = ssa_tools_utils.execute_on_remote('ifconfig %s %s netmask %s' % (active_interface, new_ip, new_netmask), node)
+    ifc = get_active_ib_interface(node)
+    (rc, ret) = ssa_tools_utils.execute_on_remote('ifconfig %s %s netmask %s' % (ifc, ip_new, netmask_new), node)
     # assumes reconfiguring doesn't fail  FIXME
     return 0
 
@@ -447,7 +418,6 @@ def test_mod_flow(acms, data, changed_node, old_ip, new_ip):
     for node in acms:
         node_lid = data[node][LID]
         node_active_interface = get_active_ib_interface(node)
-        (_,_) = ssa_tools_utils.execute_on_remote('%s -f l -d %s -s %s -c -v' % (ib_acme, node_lid, node_lid), node)
         status = kcache_ip_lookup(node,node_active_interface,new_ip,'PERMANENT')
         if status != 0:
             break
@@ -465,37 +435,40 @@ def ip_mod_flow_test(cores, als, acms, data):
     print '================== TEST IP MODIFICATION FLOW  ====================='
     print '==================================================================='
 
-    status = 0
     if len(als) == 0:
-        print 'no access node found, CHANGING CORE INSTEAD'
         changed_node = cores[0]
+        print 'WARN: No AL found, choosing CORE instead'
     else:
         changed_node = als[0]
-    active_interface = get_active_ib_interface(changed_node)
-    old_ip = get_node_ip(changed_node, active_interface)
-    old_mask = get_node_ip_mask(changed_node,active_interface)
-    status = change_node_ip(changed_node, ALT_NODE_IP, ALT_NODE_NETMASK)
-    if status != 0: #FIXME: if no error check added on change_node_ip - remove these lines 
-        status = 3
-    else:
-        change_and_load_ip(cores, old_ip, ALT_NODE_IP)
-        sample_acms = random.sample(acms, min(len(acms), sample_size))
-        status = test_mod_flow(sample_acms, data, changed_node, old_ip, ALT_NODE_IP)
 
-    undo_status = -1
-    if status != 3:
-        undo_status = 0
-        undo_status = change_node_ip(changed_node, old_ip, old_mask)
-    if undo_status > 0: #FIXME: if no error check added on change_node_ip - remove these lines 
-        print 'ERROR: FAILED TO UNDO CHANGES TO NODE IP IN MODIFICATION FLOW TEST'
-    if undo_status == 0:
-        undo_status = change_and_load_ip(cores, ALT_NODE_IP, old_ip)
-        if undo_status > 0: #FIXME: if no error check added on change_and_load - remove these lines
-            print 'ERROR: FAILED TO UNDO CHANGES TO PRELOADED FILES IN MODIFICATION FLOW TEST'
+    ifc_active	= get_active_ib_interface(changed_node)
+    ip		= get_node_ip(changed_node, ifc_active)
+    mask	= get_node_ip_mask(changed_node, ifc_active)
+
+    status = change_node_ip(changed_node, ALT_NODE_IP, ALT_NODE_NETMASK)
+    if status != 0:
+	print 'ERROR: unable to change node %s IP to %s' % (node_changed, str(ALT_NODE_IP))
+        return status
+
+    change_and_load_ip(cores, ip, ALT_NODE_IP)
+    time.sleep(30)
+    _ = commands.getoutput('sudo /usr/local/sbin/ssadmin -r --filter=acm dbquery')
+    time.sleep(30)
+
+    sample_acms = random.sample(acms, min(len(acms), sample_size))
+
+    status = test_mod_flow(sample_acms, data, changed_node, ip, ALT_NODE_IP)
+    if status != 0:
+        print 'ERROR: failed testing modification flow for node %s' % (changed_node)
+
+    change_node_ip(changed_node, ip, mask)
+    change_and_load_ip(cores, ALT_NODE_IP, ip)
+    time.sleep(30)
+    _ = commands.getoutput('sudo /usr/local/sbin/ssadmin -r --filter=acm dbquery')
+    time.sleep(30)
 
     print '==================================================================='
     print '========= TEST IP MODIFICATION FLOW COMPLETE (status: %d) =========' % (status)
-    print '=========       (modification-undo status: %d)            =========' % (undo_status)
     print '==================================================================='
 
     return status
@@ -504,10 +477,10 @@ def get_node_remote (node):
     #
     # HACK: it is assumed that node machine is connected to a remote node with port 1
     #
-    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery PI -D 0,1 | grep ^Lid', node)
+    (rc, out) = ssa_tools_utils.execute_on_remote('sudo smpquery portinfo -D 0,1 | grep ^Lid', node)
     remote_lid = out.split('.')[-1].rsplit('\n')[0]
 
-    (rc, out) = ssa_tools_utils.execute_on_remote('smpquery NI -D 0,1 | grep LocalPort', node)
+    (rc, out) = ssa_tools_utils.execute_on_remote('sudo smpquery nodeinfo -D 0,1 | grep LocalPort', node)
     remote_port = out.split('.')[-1].rsplit('\n')[0]
 
     return (remote_lid, remote_port)
@@ -554,7 +527,7 @@ def sanity_test_1 (cores, als, acms, data):
 
     status = 0
 
-    osmlid      = commands.getoutput("/usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'").rstrip('\n')
+    osmlid      = commands.getoutput("sudo /usr/sbin/ibstat |grep -a5 Act|grep SM|awk '{print $NF}'").rstrip('\n')
 
     for core in cores:
         if data[core][LID] == osmlid:
@@ -584,7 +557,7 @@ def sanity_test_1 (cores, als, acms, data):
 
     # Disconect ACM from fabric
     (remote_lid, remote_port) = get_node_remote(acm_svc)
-    cmd = 'ibportstate %s %s disable' % (remote_lid, remote_port)
+    cmd = 'sudo ibportstate %s %s disable' % (remote_lid, remote_port)
     print cmd
     ssa_tools_utils.pdsh_run(core_master, cmd)
     print 'Wait'
@@ -598,7 +571,7 @@ def sanity_test_1 (cores, als, acms, data):
         if status == 0:
             print 'ERROR. ACM %s LID %s still exists in %s LID %s cache' % \
                     (acm_svc, str(data[acm_svc][LID]), acm, str(data[acm][LID]))
-            cmd = 'ibportstate %s %s enable' % (remote_lid, remote_port)
+            cmd = 'sudo ibportstate %s %s enable' % (remote_lid, remote_port)
             print cmd
             ssa_tools_utils.pdsh_run(core_master, cmd)
             return 1
@@ -607,13 +580,13 @@ def sanity_test_1 (cores, als, acms, data):
         if status == 0:
             print 'ERROR. ACM %s GID %s still exists in %s GID %s cache' % \
                     (acm_svc, str(data[acm_svc][GID]), acm, str(data[acm][GID]))
-            cmd = 'ibportstate %s %s enable' % (remote_lid, remote_port)
+            cmd = 'sudo ibportstate %s %s enable' % (remote_lid, remote_port)
             print cmd
             ssa_tools_utils.pdsh_run(core_master, cmd)
             return 1
 
     # Reconnect ACM back to fabric
-    cmd = 'ibportstate %s %s enable' % (remote_lid, remote_port)
+    cmd = 'sudo ibportstate %s %s enable' % (remote_lid, remote_port)
     print cmd
     # command can be run on any node except for the disconected ACM
     ssa_tools_utils.pdsh_run(core_master, cmd)
@@ -630,7 +603,6 @@ def sanity_test_1 (cores, als, acms, data):
 
 def run_tests(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data):
 
-    status = 0
     status = sanity_test_0(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data)
     if status != 0:
         return status
@@ -638,6 +610,7 @@ def run_tests(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data):
     status = ip_mod_flow_test(cores, als, acms, fabric_data)
     if status != 0:
          return status
+
     status = sanity_test_1(cores, als, acms, fabric_data)
     return status
 
@@ -709,10 +682,15 @@ def main (argv):
         except:
             pass
 
-    if len(cores) != 2 or len(als) != 2 or len(acms) < 2:
-        status = 1
-    else:
-         status = run_tests(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data)
+    # Initial dbquery in order to make sure there was PRDB update
+    _ = commands.getoutput('sudo /usr/local/sbin/ssadmin -r --filter=acm dbquery')
+    time.sleep(10)
+
+    #if len(cores) != 2 or len(als) != 2 or len(acms) < 2:
+    #    status = 1
+    #else:
+    #     status = run_tests(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data)
+    status = run_tests(cores, als, acms, lids, gids, ipv4s, ipv6s, fabric_data)
 
     # close all cached connections
     ssa_tools_utils.execute_on_remote_cleanup()

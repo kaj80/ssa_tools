@@ -31,7 +31,7 @@ from pprint import pprint
 import time
 
 SSA_HOME = os.path.dirname(os.path.abspath( __file__ ))
-NFS_LOGS_DIR = "/mswg/projects/osm/kodiak/mlnx/logs"
+NFS_LOGS_DIR = "/proj/SSA/Mellanox/logs"
 SSA_SCRIPTS = "%s/scripts" % SSA_HOME
 
 
@@ -338,7 +338,7 @@ class run_on_remote():
             cmd = cmd
             #cmd = 'sudo -E %s' % cmd
         try:
-            _, stdout, _	= self.client.exec_command(cmd)
+            _, stdout, _	= self.client.exec_command('sudo ' + cmd)
             self.status		= stdout.channel.recv_exit_status()
             self.output		= stdout.channel.recv(4096).decode('ascii')
 
@@ -374,7 +374,7 @@ class run_on_remote():
         return self.output.rstrip()
 
     def kill_pid(self, pid):
-        self.client.exec_command("kill -9 %s " % pid)
+        self.client.exec_command("sudo kill -9 %s " % pid)
         return self.stdout.channel.recv_exit_status()
 
 
@@ -405,35 +405,35 @@ class ssa(object):
         return self.get_status()
 
     def stop(self):
-        self.connection.run('/usr/local/etc/init.d/%s stop' % os.path.basename(self.daemon))
-        self.connection.run('pgrep %s' % os.path.basename(self.bin))
+        self.connection.run('sudo /usr/local/etc/init.d/%s stop' % os.path.basename(self.daemon))
+        self.connection.run('sudo pgrep %s' % os.path.basename(self.bin))
         if self.connection.output:
             print 'ERROR. %s was not stopped. Killing it' % os.path.basename(self.bin)
-            self.connection.run('pkill -9 -f  %s' % self.basename)
+            self.connection.run('sudo pkill -9 -f  %s' % self.basename)
 
 
 
     def kill(self):
-        s = self.connection.run('pkill -9 -f %s` ' % self.basename)
+        s = self.connection.run('sudo pkill -9 -f %s` ' % self.basename)
         for k in CFG_FILES.keys():
             if k.endswith('_lockfile'):
-                self.connection.run('rm -f %s*' % CFG_FILES[k])
+                self.connection.run('sudo rm -f %s*' % CFG_FILES[k])
         return s
 
     def get_status(self):
         if MEMCHECK:
-            s = self.connection.run('pidof %s' % 'valgrind')
+            s = self.connection.run('sudo pidof %s' % 'valgrind')
         else:
-            s = self.connection.run('pidof %s' % os.path.basename(self.bin))
+            s = self.connection.run('sudo pidof %s' % os.path.basename(self.bin))
         return s
 
     def run(self, cmd):
-        self.connection.run(cmd)
+        self.connection.run('sudo ' + cmd)
         self.output = self.connection.output
         return self.connection.status
 
     def clear_log(self):
-        self.run('rm -f %s' % self.log)
+        self.run('sudo rm -f %s' % self.log)
         return self.connection.status
 
     def save_log(self, destination_folder):

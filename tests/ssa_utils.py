@@ -31,7 +31,7 @@ def node_port_state_change(node, state):
     try:
         SW_GID = net[out.split()[-1]][0]
         SW_PORT = net[out.split()[-1]][1]
-        o = commands.getoutput('ibportstate -G %s %s %s' % ( SW_GID, SW_PORT, state ))
+        o = commands.getoutput('sudo ibportstate -G %s %s %s' % ( SW_GID, SW_PORT, state ))
         print '[%s] ibportstate -G %s %s %s\n%s' % ( time.strftime("%b %d %H:%M:%S"), SW_GID, SW_PORT, state, o )
         return "%s %s" % ( SW_GID, SW_PORT )
     except:
@@ -57,7 +57,7 @@ def get_distribution_tree(master_sm_node):
 def read_ibnetdiscover():
     print 'Please wait, reading network'
     ibnetdiscover_log  = '/tmp/ibnetdiscover_%s.log' % time.strftime("%Y%m%d%H%M%S")
-    cmd = '/usr/sbin/ibnetdiscover > %s' % ibnetdiscover_log
+    cmd = 'sudo /usr/sbin/ibnetdiscover > %s' % ibnetdiscover_log
     o = commands.getoutput(cmd)
     print "%s\n%s" % (cmd, o)
     sysimgguid = None
@@ -87,10 +87,10 @@ def node_port_bounce(node, delay = 0):
         SW_GID = net[out.split()[-1]][0]
         SW_PORT = net[out.split()[-1]][1]
         
-        o = commands.getoutput('ibportstate -G %s %s disable' % ( SW_GID, SW_PORT ))
+        o = commands.getoutput('sudo ibportstate -G %s %s disable' % ( SW_GID, SW_PORT ))
         print '[%s] ibportstate -G %s %s disable\n%s' % ( time.strftime("%b %d %H:%M:%S"), SW_GID, SW_PORT, o )        
         time.sleep(delay)
-        o = commands.getoutput('ibportstate -G %s %s enable' % ( SW_GID, SW_PORT ))
+        o = commands.getoutput('sudo ibportstate -G %s %s enable' % ( SW_GID, SW_PORT ))
         print '[%s] ibportstate -G %s %s enable\n%s'  % ( time.strftime("%b %d %H:%M:%S"), SW_GID, SW_PORT, o )
         return 0
             

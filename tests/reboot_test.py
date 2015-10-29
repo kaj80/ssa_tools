@@ -93,6 +93,7 @@ def test_0_0_0(ibmsnet):
         delay = random.randint(  rch_global_dict['min_interval'],  rch_global_dict['max_interval'])
         print 'Restarting %s after %d s' % (str(n), delay )
         (s, o) = ssa_tools_utils.execute_on_remote('reboot', node)
+	del ssa_tools_utils.conn_dict[node]
         time.sleep(120)
 
         #Wait for boot

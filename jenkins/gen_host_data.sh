@@ -6,51 +6,46 @@ hostdata_output_file="${hostdata_output_file:-/usr/local/etc/rdma/ibssa_hosts.da
 
 echo ""  | tr -d '\n' > $hostdata_output_file
 
-while read line; do
+cat $hostname_input_file | while read line; do
 
-	ssh -n $line '
+	pdsh -N -w $line '
 
-	output_directory=/etc/rdma
+	if sudo ibportstate -D 0 1 | grep -q "LinkUp"; then
 
-	mkdir -p $output_directory
+		interface=ib0
 
-	if ibportstate -D 0 1 | grep -q "LinkUp"; then
+	elif sudo ibportstate -D 0 2 | grep -q "LinkUp"; then
 
-		port_name=ib0
-
-	elif ibportstate -D 0 2 | grep -q "LinkUp"; then
-
-		port_name=ib1
+		interface=ib1
 
 	fi
 
 
-	ip=`ip address show dev $port_name | grep "inet " | awk '\''{print $2}'\''` # retrieve ip
-	ip=`echo $ip | cut -f1 -d'\''/'\''` # get rid of irrelevant part
+	ip=$(sudo ip address show dev $interface | grep "inet " | awk '\''{print $2}'\'')
+	ip=$(echo $ip | cut -f1 -d'\''/'\'')
 
-	ipv6=`ip address show dev $port_name | grep "inet6" | awk '\''{print $2}'\''`
-	ipv6=`echo $ipv6 | sed -n 1p | cut -f1 -d'\''/'\''`
+	ipv6=$(sudo ip address show dev $interface | grep "inet6" | awk '\''{print $2}'\'')
+	ipv6=$(echo $ipv6 | sed -n 1p | cut -f1 -d'\''/'\'')
 
-	flags=`(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | cut -f1 -d'\'':'\'' ; ) | tr -d '\''\n'\''`
+	flags=`(echo "0x" ; sudo ip address show dev $interface | grep infiniband | awk '\''{print $2}'\'' | cut -f1 -d'\'':'\'' ; ) | tr -d '\''\n'\''`
 
-	QP=`(echo "0x" ; ip address show dev $port_name | grep infiniband | awk '\''{print $2}'\'' | tr - : | cut -f2-4 -d'\'':'\'' ; ) | tr -d '\'':\n'\''`
+	QP=`(echo "0x" ; sudo ip address show dev $interface | grep infiniband | awk '\''{print $2}'\'' | tr - : | cut -f2-4 -d'\'':'\'' ; ) | tr -d '\'':\n'\''`
 
-	GID=`ibaddr | awk '\''{print $2}'\''`
+	GID=`sudo ibaddr | awk '\''{print $2}'\''`
 
-	#output:
-	( printf "%-30s $GID\t\t$QP\t$flags%s\n" "$ip" ;
-		printf "%-30s $GID\t\t$QP\t$flags%s\n" "$ipv6" ; )
+	printf "%-30s $GID\t\t$QP\t$flags\n" "$ip"
+	printf "%-30s $GID\t\t$QP\t$flags\n" "$ipv6"
 
 	' >> $hostdata_output_file
 
-done < $hostname_input_file
+done
 
 
 
-while read line; do
+#while read line; do
 
-	scp $hostdata_output_file root@$line:$hostdata_output_file
+#	scp $hostdata_output_file root@$line:$hostdata_output_file
 
-done < $hostname_input_file
+#done < $hostname_input_file
 
 exit 0

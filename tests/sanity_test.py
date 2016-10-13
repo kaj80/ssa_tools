@@ -65,7 +65,7 @@ def get_opts ():
 
 def get_data (topology):
     json_file_str   = commands.getoutput('%s/maintain.py -t %s --setup status|grep Saved' % (ssa_tools_utils.SSA_HOME, topology))
-    json_file       = json_file_str.split()[2]
+    json_file       = json_file_str.split()[-1]
     print '%s/maintain.py -t %s --setup status|grep Saved' % (ssa_tools_utils.SSA_HOME, topology)
 
     json_data   = open(json_file).read()

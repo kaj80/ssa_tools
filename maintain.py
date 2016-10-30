@@ -60,7 +60,9 @@ def check_setup(global_dict):
 
                 try:
                     if typ == 'acm':
-                        (_, version) = ssa_tools_utils.execute_on_remote('ibacm -v', node)
+                        (rc, version) = ssa_tools_utils.execute_on_remote('ibacm -v', node)
+                        if rc != 0:
+                            version = 'unknown'
                     else:
                         (_, version) = ssa_tools_utils.execute_on_remote('ibssa -v', node)
                     version = version.split()[-1]
